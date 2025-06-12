@@ -71,7 +71,7 @@ public class UserService {
             }
             return userRepository.save(existingUser);
         }
-        return null; // Atau throw exception jika user tidak ditemukan
+        return null;
     }
 
     // Metode untuk menghapus pengguna
