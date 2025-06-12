@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 public class LoginResponse {
     private String message;
     private boolean success;
-    // Anda bisa menambahkan token JWT di sini jika sudah mengimplementasikan security penuh
-    // private String token;
+    private String token;
+    private Long userId;
 }
