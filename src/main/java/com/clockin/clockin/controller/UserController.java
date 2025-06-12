@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/users") // Endpoint untuk pengguna
+@RequestMapping("/api") // Endpoint untuk pengguna
 public class UserController {
 
     @Autowired
