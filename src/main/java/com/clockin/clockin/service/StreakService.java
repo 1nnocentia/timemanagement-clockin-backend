@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
+// Anotasi @Service menandakan kelas ini adalah komponen service Spring
 @Service
 public class StreakService {
 
@@ -19,25 +20,29 @@ public class StreakService {
     private StreakRepository streakRepository;
 
     @Autowired
-    private UserRepository userRepository; // Untuk cari user
+    private UserRepository userRepository;
+
+    @Autowired
+    private MailService mailService; // Injeksi MailService
+
+    @Autowired
+    private NotificationService notificationService; // Injeksi NotificationService
+
+    // Milestone streak untuk notifikasi
+    private static final int[] MILESTONES = {7, 30, 100, 365, 1000};
 
     /**
-     * Metode ini mencatat interaksi pengguna dan memperbarui streak.
-     * Logika:
-     * - Jika interaksi pertama, mulai streak 1.
-     * - Jika interaksi dilakukan pada hari yang sama dengan interaksi terakhir, tidak ada perubahan.
-     * - Jika interaksi dilakukan pada hari setelah interaksi terakhir (kemarin), streak bertambah 1.
-     * - Jika interaksi dilakukan lebih dari sehari setelah interaksi terakhir, streak direset ke 1.
-     * - Max streak akan selalu diperbarui jika current streak lebih besar.
+     * Metode ini mencatat interaksi pengguna dan memperbarui streak,
+     * serta mengirim notifikasi jika diperlukan.
+     *
      * @param userId ID pengguna yang berinteraksi.
      * @return Objek Streak yang diperbarui.
      */
-    @Transactional
+    @Transactional // Pastikan operasi ini berjalan dalam satu transaksi database
     public Streak recordInteraction(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan dengan ID: " + userId));
 
-        // Cari record streak pengguna, jika tidak ada, buat yang baru
         Streak streak = streakRepository.findByUser(user)
                 .orElseGet(() -> {
                     Streak newStreak = new Streak();
@@ -45,10 +50,9 @@ public class StreakService {
                     return newStreak;
                 });
 
-        // Dapatkan tanggal hari ini dalam UTC
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        int oldStreak = streak.getCurrentStreak(); // Simpan streak lama untuk perbandingan
 
-        // Periksa tanggal interaksi terakhir
         if (streak.getLastInteractionDate() == null) {
             // Interaksi pertama kali untuk pengguna ini
             streak.setCurrentStreak(1);
@@ -62,6 +66,10 @@ public class StreakService {
         } else {
             // Interaksi dilakukan lebih dari sehari setelah interaksi terakhir (streak direset)
             System.out.println("Interaksi terputus. Streak direset.");
+            // ** Notifikasi Streak Reset **
+            String resetMessage = "Streak Anda terputus pada " + oldStreak + " hari. Mari mulai yang baru!";
+            notificationService.createNotification(userId, resetMessage, "STREAK_RESET");
+            mailService.sendEmail(user.getEmail(), "Streak Terputus di Clockin!", resetMessage);
             streak.setCurrentStreak(1);
         }
 
@@ -74,7 +82,21 @@ public class StreakService {
         streak.setLastInteractionDate(today);
 
         // Simpan atau perbarui record streak di database
-        return streakRepository.save(streak);
+        Streak updatedStreak = streakRepository.save(streak);
+
+        // ** Notifikasi Milestone Streak **
+        // Cek hanya jika streak bertambah
+        if (updatedStreak.getCurrentStreak() > oldStreak) {
+            for (int milestone : MILESTONES) {
+                if (updatedStreak.getCurrentStreak() == milestone) {
+                    String milestoneMessage = "Selamat! Anda mencapai streak " + milestone + " hari di Clockin!";
+                    notificationService.createNotification(userId, milestoneMessage, "STREAK_MILESTONE");
+                    mailService.sendEmail(user.getEmail(), "Selamat atas Streak " + milestone + " Hari Anda!", milestoneMessage);
+                    break; // Keluar setelah menemukan milestone yang cocok
+                }
+            }
+        }
+        return updatedStreak;
     }
 
     /**
