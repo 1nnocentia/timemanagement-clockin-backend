@@ -138,7 +138,7 @@ public class UserController {
 
     // Endpoint untuk mendapatkan pengguna berdasarkan ID (GET /api/users/{id})
     @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
         Optional<User> userData = userService.getUserById(id);
         return userData.map(user -> new ResponseEntity<>(user, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -147,7 +147,7 @@ public class UserController {
     // Endpoint untuk memperbarui pengguna berdasarkan ID (PUT /api/users/{id})
     // Perhatikan: endpoint ini sekarang menangani batasan perubahan username dan password hashing.
     @PutMapping("/users/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable("id") Long id, @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
             User updatedUser = userService.updateUser(id, user);
             return new ResponseEntity<>(updatedUser, HttpStatus.OK);
@@ -160,7 +160,7 @@ public class UserController {
 
     // Endpoint untuk menghapus pengguna berdasarkan ID (DELETE /api/users/{id})
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<HttpStatus> deleteUser(@PathVariable("id") Long id) {
+    public ResponseEntity<HttpStatus> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
