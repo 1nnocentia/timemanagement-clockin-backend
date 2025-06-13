@@ -31,9 +31,6 @@ public class JwtUtil {
 
     // // Mendapatkan kunci signing dari secret key yang telah di-decode Base64
     // private Key getSigningKey() {
-    //     // Pastikan 'secret' adalah string Base64 yang valid.
-    //     // Jika tidak, Decoders.BASE64.decode akan melempar IllegalArgumentException.
-    //     // Error kompilasi pada .parserBuilder() atau .builder() bisa jadi akibat dari masalah di sini.
     //     byte[] keyBytes = Decoders.BASE64.decode(secret);
     //     return Keys.hmacShaKeyFor(keyBytes);
     // }
@@ -43,11 +40,20 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // Mendapatkan semua klaim dari token
+    // // Mendapatkan semua klaim dari token
+    // public Claims extractAllClaims(String token) {
+    //     return Jwts.parserBuilder()
+    //             .setSigningKey(getSigningKey())
+    //             .build()
+    //             .parseClaimsJws(token)
+    //             .getBody();
+    // }
+
     public Claims extractAllClaims(String token) {
-    JwtParser parser = Jwts.parser().verifyWith(getSigningKey()).build();
-    return parser.parseSignedClaims(token).getPayload();
-}
+        JwtParser parser = Jwts.parser().verifyWith(getSigningKey()).build();
+        return parser.parseSignedClaims(token).getPayload();
+    }
+
 
     // Mendapatkan satu klaim spesifik dari token
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -79,8 +85,6 @@ public class JwtUtil {
     // Membuat token JWT
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        // Anda bisa menambahkan klaim kustom di sini, misalnya peran pengguna
-        // claims.put("roles", userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
         return createToken(claims, userDetails.getUsername());
     }
 

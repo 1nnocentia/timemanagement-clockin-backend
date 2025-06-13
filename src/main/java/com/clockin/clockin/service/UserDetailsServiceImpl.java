@@ -1,6 +1,5 @@
 package com.clockin.clockin.service;
 
-
 import com.clockin.clockin.model.User;
 import com.clockin.clockin.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;

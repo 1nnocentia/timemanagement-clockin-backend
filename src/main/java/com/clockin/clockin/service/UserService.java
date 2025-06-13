@@ -2,62 +2,80 @@ package com.clockin.clockin.service;
 
 import com.clockin.clockin.model.User;
 import com.clockin.clockin.repository.UserRepository;
+import com.clockin.clockin.config.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+// Anotasi @Service menandakan kelas ini adalah komponen service Spring
 @Service
 public class UserService {
 
     @Autowired
-    private UserRepository userRepository;
+    public UserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // Injeksi BCryptPasswordEncoder
+    private PasswordEncoder passwordEncoder;
 
-    // Constraint untuk perubahan username
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    // Batasan hari untuk perubahan username
     private static final int USERNAME_CHANGE_COOLDOWN_DAYS = 30;
-
-    // Masa berlaku token untuk reset password
+    // Masa berlaku token reset password dalam menit
     private static final long RESET_TOKEN_VALIDITY_MINUTES = 15;
 
-    // Menambahkan pengguna baru (signup)
+    // Metode untuk mendaftarkan pengguna baru (signup)
     @Transactional
     public User registerUser(User user) {
-        // Cek apakah username atau email sudah ada
         if (userRepository.findByUsername(user.getUsername()) != null) {
-            throw new RuntimeException("Username already exists.");
+            throw new RuntimeException("Username '" + user.getUsername() + "' sudah ada.");
         }
         if (userRepository.findByEmail(user.getEmail()) != null) {
-            throw new RuntimeException("Email already exists.");
+            throw new RuntimeException("Email '" + user.getEmail() + "' sudah ada.");
         }
 
-        // Hashing password sebelum menyimpan ke database
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setLastUsernameChangeDate(LocalDate.now(ZoneOffset.UTC));
+        if (user.getProfilePictureId() == null || user.getProfilePictureId().isEmpty()) {
+            user.setProfilePictureId("avatar-1"); // Set default avatar
+        }
         return userRepository.save(user);
     }
 
-    // Metode untuk proses login
-    public Optional<User> authenticateUser(String usernameOrEmail, String password) {
-        User user = userRepository.findByUsername(usernameOrEmail);
-        if (user == null) {
-            user = userRepository.findByEmail(usernameOrEmail);
-        }
-
-        // Jika user tidak ditemukan atau password tidak cocok
-        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+    /**
+     * Mengautentikasi pengguna dan mengembalikan token JWT jika berhasil.
+     * @param usernameOrEmail Username atau email pengguna.
+     * @param password Password pengguna.
+     * @return Optional<String> containing the JWT token if authentication is successful, or Optional.empty() if it fails.
+     */
+    public Optional<String> authenticateAndGenerateToken(String usernameOrEmail, String password) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(usernameOrEmail, password)
+            );
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String jwtToken = jwtUtil.generateToken(userDetails);
+            return Optional.of(jwtToken);
+        } catch (Exception e) {
+            System.err.println("Autentikasi gagal untuk user: " + usernameOrEmail + ". Error: " + e.getMessage());
             return Optional.empty();
         }
-        return Optional.of(user);
     }
 
     // Metode untuk mendapatkan semua pengguna
@@ -70,54 +88,50 @@ public class UserService {
         return userRepository.findById(id);
     }
 
-    // Metode untuk memperbarui pengguna
     /**
-     * Termasuk batasan perubahan username dan hashing password
-     * @param id Id pengguna yang akan diperbarui
-     * @param userDetails Objek user yang berisi detail baru
-     * @return Objek User yang diperbarui
-     * @throws RuntimeException kalau user tidak ditemukan atau batasan perubahan username dilanggar
+     * Metode untuk memperbarui detail pengguna.
+     * Termasuk logika untuk batasan perubahan username dan hashing password.
+     *
+     * @param id The ID of the user to update.
+     * @param userDetails User object with details to be updated.
+     * @return The updated User object.
+     * @throws RuntimeException if the user is not found or the username change cooldown is violated.
      */
     @Transactional
     public User updateUser(Long id, User userDetails) {
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan dengan ID: " + id));
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
 
-        // Update Nama
         existingUser.setNama(userDetails.getNama());
 
-        // Update Username
-        // Cek apakah username berubah
         if (!existingUser.getUsername().equals(userDetails.getUsername())) {
-            // Cek batasan perubahan username
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
             if (existingUser.getLastUsernameChangeDate() != null &&
                 existingUser.getLastUsernameChangeDate().plusDays(USERNAME_CHANGE_COOLDOWN_DAYS).isAfter(today)) {
-                throw new RuntimeException("Anda hanya dapat mengubah username setiap " + USERNAME_CHANGE_COOLDOWN_DAYS + " hari.");
+                throw new RuntimeException("You can only change your username every " + USERNAME_CHANGE_COOLDOWN_DAYS + " days.");
             }
-            // Cek apakah username baru sudah ada
             User userWithNewUsername = userRepository.findByUsername(userDetails.getUsername());
             if (userWithNewUsername != null && !userWithNewUsername.getId().equals(id)) {
-                throw new RuntimeException("Username '" + userDetails.getUsername() + "' sudah digunakan oleh pengguna lain.");
+                throw new RuntimeException("Username '" + userDetails.getUsername() + "' is already in use by another user.");
             }
             existingUser.setUsername(userDetails.getUsername());
-            existingUser.setLastUsernameChangeDate(today); // Perbarui tanggal perubahan terakhir
+            existingUser.setLastUsernameChangeDate(today);
         }
 
-        // Update Email
-        // Cek apakah email berubah
         if (!existingUser.getEmail().equals(userDetails.getEmail())) {
-            // Cek apakah email baru sudah ada
             User userWithNewEmail = userRepository.findByEmail(userDetails.getEmail());
             if (userWithNewEmail != null && !userWithNewEmail.getId().equals(id)) {
-                throw new RuntimeException("Email '" + userDetails.getEmail() + "' sudah digunakan oleh pengguna lain.");
+                throw new RuntimeException("Email '" + userDetails.getEmail() + "' is already in use by another user.");
             }
             existingUser.setEmail(userDetails.getEmail());
         }
 
-        // Update Password (jika disediakan dan tidak kosong)
         if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
             existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+        }
+
+        if (userDetails.getProfilePictureId() != null && !userDetails.getProfilePictureId().isEmpty()) {
+            existingUser.setProfilePictureId(userDetails.getProfilePictureId());
         }
 
         return userRepository.save(existingUser);
@@ -127,22 +141,16 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Pengguna tidak ditemukan dengan ID: " + id);
+            throw new RuntimeException("User not found with ID: " + id);
         }
         userRepository.deleteById(id);
     }
 
-    /**
-     * Menginisiasi proses lupa password dengan menghasilkan token unik.
-     * @param email Email pengguna yang lupa password.
-     * @return Token yang dihasilkan.
-     * @throws RuntimeException jika email tidak ditemukan.
-     */
     @Transactional
     public String initiatePasswordReset(String email) {
         User user = userRepository.findByEmail(email);
         if (user == null) {
-            throw new RuntimeException("Pengguna dengan email '" + email + "' tidak ditemukan.");
+            throw new RuntimeException("User with email '" + email + "' not found.");
         }
 
         String token = UUID.randomUUID().toString();
@@ -152,39 +160,27 @@ public class UserService {
         user.setResetPasswordTokenExpiryDate(expiryDate);
         userRepository.save(user);
 
-        // Di sini Anda akan mengirim email ke user dengan token reset password
-        // Contoh: sendEmail(user.getEmail(), "Reset Password", "Klik link ini untuk reset password: YOUR_FRONTEND_URL/reset-password?token=" + token);
-        System.out.println("Reset token untuk " + email + ": " + token + " (Berlaku hingga: " + expiryDate + ")");
-        return token; // Mengembalikan token hanya untuk demonstrasi/debugging. Dalam produksi, tidak dikembalikan ke klien.
+        System.out.println("Reset token for " + email + ": " + token + " (Valid until: " + expiryDate + ")");
+        return token;
     }
 
-    /**
-     * Mereset password pengguna menggunakan token yang diberikan.
-     * @param token Token reset password.
-     * @param newPassword Password baru.
-     * @throws RuntimeException jika token tidak valid, kadaluarsa, atau ada masalah lainnya.
-     */
     @Transactional
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findByResetPasswordToken(token);
 
         if (user == null) {
-            throw new RuntimeException("Token reset password tidak valid.");
+            throw new RuntimeException("Invalid password reset token.");
         }
 
-        // Cek apakah token sudah kadaluarsa (dalam UTC)
         if (user.getResetPasswordTokenExpiryDate() == null ||
             user.getResetPasswordTokenExpiryDate().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
-            // Reset token setelah kadaluarsa atau tidak valid
             user.setResetPasswordToken(null);
             user.setResetPasswordTokenExpiryDate(null);
-            userRepository.save(user); // Simpan perubahan untuk membersihkan token yang kadaluarsa
-            throw new RuntimeException("Token reset password sudah kadaluarsa atau tidak valid. Silakan minta token baru.");
+            userRepository.save(user);
+            throw new RuntimeException("Password reset token has expired or is invalid. Please request a new token.");
         }
 
-        // Hashing password baru
         user.setPassword(passwordEncoder.encode(newPassword));
-        // Hapus token dan waktu kadaluarsa setelah digunakan
         user.setResetPasswordToken(null);
         user.setResetPasswordTokenExpiryDate(null);
         userRepository.save(user);

@@ -1,96 +1,114 @@
 package com.clockin.clockin.controller;
 
-import com.clockin.clockin.model.Streak;
 import com.clockin.clockin.model.User;
-import com.clockin.clockin.dto.ForgotPasswordRequest;
 import com.clockin.clockin.dto.LoginRequest;
 import com.clockin.clockin.dto.LoginResponse;
+import com.clockin.clockin.dto.ForgotPasswordRequest;
 import com.clockin.clockin.dto.ResetPasswordRequest;
-import com.clockin.clockin.service.StreakService;
 import com.clockin.clockin.service.UserService;
+import com.clockin.clockin.service.StreakService;
+import com.clockin.clockin.service.NotificationService;
+import com.clockin.clockin.model.Streak;
+import com.clockin.clockin.model.Notification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
 
+// Anotasi @RestController menandakan kelas ini adalah RESTful controller
 @RestController
-@RequestMapping("/api") // Endpoint untuk pengguna
+// Anotasi @RequestMapping untuk menentukan base path untuk semua endpoint di controller ini
+@RequestMapping("/api")
 public class UserController {
+
+    public static final List<String> AVAILABLE_PROFILE_PICTURE_IDS = List.of(
+            "avatar-1", "avatar-2", "avatar-3", "avatar-4", "avatar-5", "avatar-6"
+    );
 
     @Autowired
     private UserService userService;
 
-    // Anotasi @Autowired untuk injeksi dependensi StreakService
     @Autowired
     private StreakService streakService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // Endpoint untuk pendaftaran pengguna baru (signup)
     // POST /api/signup
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody User user) {
+    public ResponseEntity<?> signup(@Valid @RequestBody User user) {
         try {
-            // Perbarui konstruktor user jika Anda menggunakan yang baru
-            // User newUser = new User(user.getNama(), user.getUsername(), user.getEmail(), user.getPassword());
             User registeredUser = userService.registerUser(user);
             return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
         } catch (RuntimeException e) {
-            // Jika username atau email sudah ada
             return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         } catch (Exception e) {
-            // Penanganan error umum
             return new ResponseEntity<>("Terjadi kesalahan saat pendaftaran.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // Endpoint untuk login pengguna
+    // Endpoint untuk login pengguna dengan JWT
     // POST /api/login
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-        Optional<User> authenticatedUser = userService.authenticateUser(loginRequest.getUsernameOrEmail(), loginRequest.getPassword());
-        if (authenticatedUser.isPresent()) {
-            // Di sini, Anda akan menghasilkan token JWT atau sesi.
-            // Untuk demonstrasi, kita hanya memberikan pesan sukses.
-            // Contoh JWT: String token = jwtService.generateToken(authenticatedUser.get());
-            // String token = "dummy_jwt_token_for_user_" + authenticatedUser.get().getId();
-            // Implementasi "remember me" di sisi klien akan menyimpan token ini.
-            return new ResponseEntity<>(new LoginResponse("Login Berhasil!", true, "YOUR_GENERATED_JWT_TOKEN", authenticatedUser.get().getId()), HttpStatus.OK);
+        Optional<String> jwtTokenOptional = userService.authenticateAndGenerateToken(
+            loginRequest.getUsernameOrEmail(),
+            loginRequest.getPassword()
+        );
+
+        if (jwtTokenOptional.isPresent()) {
+            String jwtToken = jwtTokenOptional.get();
+            User user = null;
+            String usernameOrEmail = loginRequest.getUsernameOrEmail();
+            User userByUsername = userService.userRepository.findByUsername(usernameOrEmail);
+            if (userByUsername != null) {
+                user = userByUsername;
+            } else {
+                user = userService.userRepository.findByEmail(usernameOrEmail);
+            }
+
+            if (user != null) {
+                return new ResponseEntity<>(new LoginResponse("Login Berhasil!", true, jwtToken, user.getId()), HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(new LoginResponse("Terjadi kesalahan internal setelah login.", false, null, null), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
         } else {
             return new ResponseEntity<>(new LoginResponse("Username/Email atau password salah.", false, null, null), HttpStatus.UNAUTHORIZED);
         }
     }
 
+    // Endpoint untuk logout pengguna
     // POST /api/logout
     @PostMapping("/logout")
     public ResponseEntity<String> logout() {
-        // Dalam sistem berbasis token (misalnya JWT), logout sebagian besar terjadi di sisi klien
-        // dengan menghapus token. Backend tidak perlu "mengakhiri sesi".
-        // Jika Anda memiliki implementasi blacklist token, logikanya akan ditambahkan di sini.
-        System.out.println("Pengguna melakukan percobaan logout. Token harus dihapus dari sisi klien.");
-        return new ResponseEntity<>("Logout berhasil. Token Anda telah dihapus dari sisi klien.", HttpStatus.OK);
+        // Dalam sistem berbasis token (JWT), logout sebagian besar terjadi di sisi klien
+        // dengan menghapus token yang disimpan (misalnya, dari Local Storage, Session Storage, atau cookies).
+        // Backend tidak perlu "mengakhiri sesi" karena sesi tidak disimpan di server.
+        System.out.println("Pengguna melakukan percobaan logout. Frontend diharapkan untuk menghapus token JWT.");
+        return new ResponseEntity<>("Logout berhasil. Token Anda diharapkan telah dihapus dari sisi klien.", HttpStatus.OK);
     }
 
+    // Endpoint untuk memulai permintaan lupa password
     // POST /api/forgot-password/request
     @PostMapping("/forgot-password/request")
     public ResponseEntity<String> forgotPasswordRequest(@RequestBody ForgotPasswordRequest request) {
         try {
-            // Di sini Anda akan memanggil layanan untuk menghasilkan dan mengirim token.
-            // Untuk demonstrasi, kita hanya akan mencetak token ke konsol.
             String token = userService.initiatePasswordReset(request.getEmail());
-            // return new ResponseEntity<>("Jika email Anda terdaftar, instruksi reset password telah dikirim.", HttpStatus.OK);
-            return new ResponseEntity<>("Token reset password telah dihasilkan untuk email " + request.getEmail() + ": " + token + ". (Cek konsol server untuk token. Dalam produksi, ini akan dikirim via email)", HttpStatus.OK);
-
+            return new ResponseEntity<>("Token reset password telah dihasilkan untuk email " + request.getEmail() + ". (Cek konsol server untuk token. Dalam produksi, ini akan dikirim via email)", HttpStatus.OK);
         } catch (RuntimeException e) {
-            // Untuk keamanan, disarankan untuk tidak memberi tahu apakah email terdaftar atau tidak
             return new ResponseEntity<>("Jika email Anda terdaftar, instruksi reset password telah dikirim. Pesan error: " + e.getMessage(), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Terjadi kesalahan saat memproses permintaan reset password.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // ** BARU: Endpoint untuk mereset password menggunakan token **
+    // Endpoint untuk mereset password menggunakan token
     // POST /api/forgot-password/reset
     @PostMapping("/forgot-password/reset")
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
@@ -103,7 +121,6 @@ public class UserController {
             return new ResponseEntity<>("Terjadi kesalahan saat mereset password.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
     // Endpoint untuk merekam interaksi pengguna dan memperbarui streak
     // POST /api/users/{userId}/record-interaction
@@ -137,8 +154,54 @@ public class UserController {
         }
     }
 
+    // Endpoint untuk mendapatkan semua notifikasi pengguna
+    // GET /api/users/{userId}/notifications
+    @GetMapping("/users/{userId}/notifications")
+    public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable Long userId) {
+        try {
+            List<Notification> notifications = notificationService.getNotificationsByUserId(userId);
+            return new ResponseEntity<>(notifications, HttpStatus.OK);
+        }
+        catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Endpoint untuk mendapatkan semua notifikasi pengguna yang belum dibaca
+    // GET /api/users/{userId}/notifications/unread
+    @GetMapping("/users/{userId}/notifications/unread")
+    public ResponseEntity<List<Notification>> getUserUnreadNotifications(@PathVariable Long userId) {
+        try {
+            List<Notification> notifications = notificationService.getUnreadNotificationsByUserId(userId);
+            return new ResponseEntity<>(notifications, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Endpoint untuk menandai notifikasi sebagai sudah dibaca
+    // PUT /api/notifications/{notificationId}/read
+    @PutMapping("/notifications/{notificationId}/read")
+    public ResponseEntity<HttpStatus> markNotificationAsRead(@PathVariable Long notificationId) {
+        try {
+            boolean success = notificationService.markNotificationAsRead(notificationId);
+            if (success) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // Endpoint untuk mendapatkan semua pengguna (GET /api/users)
-    // Hanya untuk tujuan demonstrasi/admin. Biasanya dilindungi.
+    // Endpoint ini sekarang dilindungi oleh JWT
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
@@ -146,30 +209,32 @@ public class UserController {
     }
 
     // Endpoint untuk mendapatkan pengguna berdasarkan ID (GET /api/users/{id})
+    // Endpoint ini sekarang dilindungi oleh JWT
     @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
         Optional<User> userData = userService.getUserById(id);
         return userData.map(user -> new ResponseEntity<>(user, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     // Endpoint untuk memperbarui pengguna berdasarkan ID (PUT /api/users/{id})
-    // Perhatikan: endpoint ini sekarang menangani batasan perubahan username dan password hashing.
+    // Endpoint ini sekarang dilindungi oleh JWT
     @PutMapping("/users/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable("id") Long id, @Valid @RequestBody User user) {
         try {
             User updatedUser = userService.updateUser(id, user);
             return new ResponseEntity<>(updatedUser, HttpStatus.OK);
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST); // Atau status lain yang sesuai
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     // Endpoint untuk menghapus pengguna berdasarkan ID (DELETE /api/users/{id})
+    // Endpoint ini sekarang dilindungi oleh JWT
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<HttpStatus> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<HttpStatus> deleteUser(@PathVariable("id") Long id) {
         try {
             userService.deleteUser(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);

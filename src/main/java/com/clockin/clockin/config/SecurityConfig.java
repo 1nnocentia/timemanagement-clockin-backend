@@ -1,22 +1,22 @@
 package com.clockin.clockin.config;
 
 
-// import com.clockin.filter.JwtAuthFilter;
+import com.clockin.clockin.filter.JwtAuthFilter;
 import com.clockin.clockin.service.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-// import org.springframework.security.authentication.AuthenticationManager;
-// import org.springframework.security.authentication.AuthenticationProvider;
-// import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-// import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-// import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-// import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,11 +27,14 @@ import java.util.Properties;
 @EnableWebSecurity // Mengaktifkan konfigurasi keamanan web Spring
 public class SecurityConfig {
 
+    private final UserDetailsServiceImpl userDetailsService;
+    private final JwtAuthFilter jwtAuthFilter;
+
     // Konstruktor untuk injeksi dependensi
-    // private final UserDetailsServiceImpl userDetailsService;
-    // public SecurityConfig(UserDetailsServiceImpl userDetailsService) {
-    //     this.userDetailsService = userDetailsService;
-    // }
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService, JwtAuthFilter jwtAuthFilter) {
+        this.userDetailsService = userDetailsService;
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -68,6 +71,21 @@ public class SecurityConfig {
         return mailSender;
     }
 
+    // Mendefinisikan AuthenticationProvider
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
+        return authenticationProvider;
+    }
+
+    // Mendefinisikan AuthenticationManager
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
     // Konfigurasi rantai filter keamanan HTTP
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -79,17 +97,21 @@ public class SecurityConfig {
                     "/api/signup",
                     "/api/login",
                     "/api/forgot-password/**",
-                    // ** BARU: Izinkan akses untuk Swagger UI dan OpenAPI Docs **
-                    "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/webjars/**" // Diperlukan untuk resource webjars (misalnya, font, CSS)
+                    "/api/logout", // Izinkan akses ke endpoint logout
+                    "/swagger-ui.html", // Izinkan akses untuk Swagger UI
+                    "/swagger-ui/**", // Izinkan akses untuk aset Swagger UI
+                    "/v3/api-docs/**", // Izinkan akses untuk spesifikasi OpenAPI
+                    "/webjars/**" // Izinkan akses untuk resource webjars
                 ).permitAll()
                 // Membutuhkan otentikasi untuk semua permintaan lainnya
                 .anyRequest().authenticated()
             )
-            .formLogin(AbstractHttpConfigurer::disable) // Menonaktifkan form login default Spring Security jika tidak diperlukan
-            .httpBasic(AbstractHttpConfigurer::disable); // Menonaktifkan basic HTTP authentication jika tidak diperlukan
+            // Konfigurasi manajemen sesi agar stateless (tidak menyimpan sesi di server)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Menambahkan AuthenticationProvider kustom
+            .authenticationProvider(authenticationProvider())
+            // Menambahkan JwtAuthFilter sebelum UsernamePasswordAuthenticationFilter
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
