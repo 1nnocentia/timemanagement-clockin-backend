@@ -43,6 +43,7 @@ public class UserService {
     // Metode untuk mendaftarkan pengguna baru (signup)
     @Transactional
     public User registerUser(User user) {
+
         if (userRepository.findByUsername(user.getUsername()) != null) {
             throw new RuntimeException("Username '" + user.getUsername() + "' sudah ada.");
         }

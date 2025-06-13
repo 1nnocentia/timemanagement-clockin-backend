@@ -54,8 +54,18 @@ public class UserController {
 
     // Endpoint untuk login pengguna dengan JWT
     // POST /api/login
+    // @PostMapping("/login")
+    // public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+    //     Optional<String> jwtTokenOptional = userService.authenticateAndGenerateToken(
+    //         loginRequest.getUsernameOrEmail(),
+    //         loginRequest.getPassword()
+    //     );
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+        // Log untuk mengecek apakah request body diparsing dengan benar
+        System.out.println("DEBUG: usernameOrEmail = " + loginRequest.getUsernameOrEmail());
+        System.out.println("DEBUG: password = " + loginRequest.getPassword());
+
         Optional<String> jwtTokenOptional = userService.authenticateAndGenerateToken(
             loginRequest.getUsernameOrEmail(),
             loginRequest.getPassword()
