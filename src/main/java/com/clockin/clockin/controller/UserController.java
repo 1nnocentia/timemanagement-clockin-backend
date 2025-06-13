@@ -62,7 +62,16 @@ public class UserController {
         }
     }
 
-    // ** BARU: Endpoint untuk memulai permintaan lupa password **
+    // POST /api/logout
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout() {
+        // Dalam sistem berbasis token (misalnya JWT), logout sebagian besar terjadi di sisi klien
+        // dengan menghapus token. Backend tidak perlu "mengakhiri sesi".
+        // Jika Anda memiliki implementasi blacklist token, logikanya akan ditambahkan di sini.
+        System.out.println("Pengguna melakukan percobaan logout. Token harus dihapus dari sisi klien.");
+        return new ResponseEntity<>("Logout berhasil. Token Anda telah dihapus dari sisi klien.", HttpStatus.OK);
+    }
+
     // POST /api/forgot-password/request
     @PostMapping("/forgot-password/request")
     public ResponseEntity<String> forgotPasswordRequest(@RequestBody ForgotPasswordRequest request) {

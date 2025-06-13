@@ -1,29 +1,43 @@
 package com.clockin.clockin.config;
 
-import java.util.Properties;
 
+// import com.clockin.filter.JwtAuthFilter;
+import com.clockin.clockin.service.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
+// import org.springframework.security.authentication.AuthenticationManager;
+// import org.springframework.security.authentication.AuthenticationProvider;
+// import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+// import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+// import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+// import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Properties;
+
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity // Mengaktifkan konfigurasi keamanan web Spring
 public class SecurityConfig {
 
-    // Anotasi @Bean menandakan bahwa metode ini akan menghasilkan bean yang dikelola oleh Spring IoC container
-    // Bean ini adalah BCryptPasswordEncoder yang akan digunakan untuk hashing password
+    // Konstruktor untuk injeksi dependensi
+    // private final UserDetailsServiceImpl userDetailsService;
+    // public SecurityConfig(UserDetailsServiceImpl userDetailsService) {
+    //     this.userDetailsService = userDetailsService;
+    // }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-     // ** Mendefinisikan JavaMailSender bean secara eksplisit **
-    // Menggunakan @Value untuk menyuntikkan nilai dari application.properties
     @Value("${spring.mail.host}")
     private String host;
     @Value("${spring.mail.port}")
@@ -37,8 +51,6 @@ public class SecurityConfig {
     @Value("${spring.mail.properties.mail.smtp.starttls.enable}")
     private boolean starttlsEnable;
 
-    // Untuk sementara menangguhkan layanan email, Anda bisa mengkomentari metode @Bean di bawah ini.
-    // Jika dikomentari, MailService tidak akan dapat menemukan bean JavaMailSender.
     @Bean
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
@@ -56,5 +68,29 @@ public class SecurityConfig {
         return mailSender;
     }
 
-    
+    // Konfigurasi rantai filter keamanan HTTP
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable) // Menonaktifkan CSRF untuk API RESTful
+            .authorizeHttpRequests(authorize -> authorize
+                // Mengizinkan akses tanpa otentikasi ke endpoint-endpoint ini
+                .requestMatchers(
+                    "/api/signup",
+                    "/api/login",
+                    "/api/forgot-password/**",
+                    // ** BARU: Izinkan akses untuk Swagger UI dan OpenAPI Docs **
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/webjars/**" // Diperlukan untuk resource webjars (misalnya, font, CSS)
+                ).permitAll()
+                // Membutuhkan otentikasi untuk semua permintaan lainnya
+                .anyRequest().authenticated()
+            )
+            .formLogin(AbstractHttpConfigurer::disable) // Menonaktifkan form login default Spring Security jika tidak diperlukan
+            .httpBasic(AbstractHttpConfigurer::disable); // Menonaktifkan basic HTTP authentication jika tidak diperlukan
+
+        return http.build();
+    }
 }
