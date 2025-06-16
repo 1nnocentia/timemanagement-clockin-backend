@@ -16,6 +16,7 @@ public class Kategori {
     @Column(name = "nama_kategori", nullable = false)
     private String namaKategori;
 
+    // foreign key to User
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
