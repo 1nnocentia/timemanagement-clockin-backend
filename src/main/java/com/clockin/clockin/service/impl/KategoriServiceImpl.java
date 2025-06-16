@@ -18,14 +18,14 @@ public class KategoriServiceImpl implements KategoriService {
 
     private KategoriDTO mapToDTO(Kategori kategori) {
         KategoriDTO dto = new KategoriDTO();
-        dto.setId(kategori.getId_kategori());
+        dto.setId(kategori.getId());
         dto.setNamaKategori(kategori.getNamaKategori());
         return dto;
     }
 
     private Kategori mapToEntity(KategoriDTO dto) {
         Kategori kategori = new Kategori();
-        kategori.setId_kategori(dto.getId());
+        kategori.setId(dto.getId());
         kategori.setNamaKategori(dto.getNamaKategori());
         return kategori;
     }
