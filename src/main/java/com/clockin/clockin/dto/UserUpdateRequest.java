@@ -20,6 +20,5 @@ public class UserUpdateRequest {
     @Pattern(regexp = ".*[!@#$%^&*()].*", message = "Password must contain at least one special character")
     private String password;
 
-    // ID Gambar Profil: Tidak ada validasi khusus, hanya set jika disediakan
     private String profilePictureId;
 }

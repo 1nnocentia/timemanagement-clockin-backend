@@ -17,11 +17,11 @@ import java.time.LocalDateTime;
 public class User {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-increment ID
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "Name cannot be blank")
-    @Column(name="nama", nullable = false) // Kolom nama, tidak boleh null
+    @Column(name="nama", nullable = false)
     private String nama;
 
     @NotBlank(message = "Username cannot be blank")
