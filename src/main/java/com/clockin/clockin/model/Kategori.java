@@ -15,4 +15,8 @@ public class Kategori {
 
     @Column(name = "nama_kategori", nullable = false)
     private String namaKategori;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }
