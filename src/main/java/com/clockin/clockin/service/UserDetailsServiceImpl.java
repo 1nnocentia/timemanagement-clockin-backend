@@ -8,9 +8,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList; // Untuk koleksi kosong dari Authorities
+import java.util.ArrayList;
 
-// Anotasi @Service menandakan kelas ini adalah komponen service Spring
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
@@ -18,35 +17,32 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private UserRepository userRepository;
 
     /**
-     * Memuat detail pengguna berdasarkan username atau email.
-     * Metode ini dipanggil oleh Spring Security selama proses otentikasi.
+     * This method loads user details by username OR email.
      *
-     * @param usernameOrEmail Nama pengguna atau email yang akan dicari.
-     * @return Objek UserDetails yang berisi informasi pengguna dan otoritasnya.
-     * @throws UsernameNotFoundException jika pengguna tidak ditemukan.
+     * @param usernameOrEmail
+     * @return UserDetails object
+     * @throws UsernameNotFoundException
      */
     @Override
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        // Coba cari berdasarkan username
+        // search by username
         User user = userRepository.findByUsername(usernameOrEmail);
 
-        // Jika tidak ditemukan, coba cari berdasarkan email
+        // if not found by username, search by email
         if (user == null) {
             user = userRepository.findByEmail(usernameOrEmail);
         }
 
-        // Jika tetap tidak ditemukan, lempar exception
+        // email and username not valid, throw exception
         if (user == null) {
-            throw new UsernameNotFoundException("Pengguna tidak ditemukan dengan username atau email: " + usernameOrEmail);
+            throw new UsernameNotFoundException("No user found with this username or email: " + usernameOrEmail);
         }
 
-        // Mengembalikan objek UserDetails yang dibangun oleh Spring Security
-        // Di sini kita hanya menggunakan username, password, dan daftar otoritas kosong
-        // Anda bisa menambahkan peran/otoritas yang sebenarnya dari entitas User jika ada.
+        // return UserDetails object
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(), // Atau email, tergantung mana yang Anda ingin gunakan sebagai "username" unik
+                user.getUsername(),
                 user.getPassword(),
-                new ArrayList<>() // Daftar otoritas/peran (kosong untuk saat ini)
+                new ArrayList<>()
         );
     }
 }
