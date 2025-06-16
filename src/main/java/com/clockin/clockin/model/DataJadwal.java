@@ -35,4 +35,8 @@ public class DataJadwal {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_prioritas", nullable = false)
     private Prioritas prioritas;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }
