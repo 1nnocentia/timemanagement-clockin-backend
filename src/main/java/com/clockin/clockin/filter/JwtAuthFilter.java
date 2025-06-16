@@ -18,7 +18,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-// Anotasi @Component menandakan kelas ini adalah komponen Spring
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -28,7 +27,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private UserDetailsService userDetailsService; // Menggunakan UserDetailsService yang sudah kita buat
+    private UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -39,30 +38,28 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String username = null;
         String jwt = null;
 
-        // Periksa apakah header Authorization ada dan berformat "Bearer <token>"
+        // header Authorization = "Bearer <token
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7); // Ambil token JWT setelah "Bearer "
+            jwt = authorizationHeader.substring(7);
             try {
-                username = jwtUtil.extractUsername(jwt); // Ekstrak username dari token
+                username = jwtUtil.extractUsername(jwt);
             } catch (io.jsonwebtoken.ExpiredJwtException e) {
-                logger.warn("JWT Token sudah kadaluarsa", e);
+                logger.warn("JWT Token is expired", e);
             } catch (io.jsonwebtoken.MalformedJwtException e) {
-                logger.warn("JWT Token tidak valid", e);
+                logger.warn("JWT Token is not valid", e);
             } catch (io.jsonwebtoken.SignatureException e) {
-                logger.warn("Tanda tangan JWT tidak valid", e);
+                logger.warn("JWT signature is not valid", e);
             } catch (Exception e) {
-                logger.error("Error saat mengurai JWT Token", e);
+                logger.error("Error compile JWT Token", e);
             }
         }
 
-        // Jika username ditemukan dan belum ada autentikasi di SecurityContext
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // Validasi token dengan userDetails
+            // token validation with userdetails
             if (jwtUtil.validateToken(jwt, userDetails)) {
-                // Buat objek autentikasi dan set di SecurityContext
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 usernamePasswordAuthenticationToken
@@ -70,7 +67,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
             }
         }
-        // Lanjutkan rantai filter
         filterChain.doFilter(request, response);
     }
 }

@@ -28,15 +28,15 @@ public class Notification {
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
 
-    // Tipe notifikasi ("STREAK_MILESTONE", "STREAK_RESET", "REMINDER")
+    // Notification type ("STREAK_MILESTONE", "STREAK_RESET", "REMINDER")
     @Column(name = "type", nullable = false)
     private String type;
 
-    // Status notifikasi
+    // Notification read status
     @Column(name = "is_read", nullable = false)
     private boolean isRead = false; 
 
-    // Waktu notifikasi dibuat (otomatis oleh Hibernate)
+    // Notification creation timestamp
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

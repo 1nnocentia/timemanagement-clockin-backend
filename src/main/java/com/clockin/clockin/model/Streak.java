@@ -18,7 +18,7 @@ public class Streak {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY) // Lazy loading agar User tidak langsung dimuat | ugh, i'm lazy T_T
+    @ManyToOne(fetch = FetchType.LAZY) // Lazy loading | ugh, i'm lazy T_T
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
