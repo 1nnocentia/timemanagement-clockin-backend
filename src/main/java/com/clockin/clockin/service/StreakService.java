@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
-// Anotasi @Service menandakan kelas ini adalah komponen service Spring
 @Service
 public class StreakService {
 
@@ -23,22 +22,22 @@ public class StreakService {
     private UserRepository userRepository;
 
     @Autowired
-    private MailService mailService; // Injeksi MailService
+    private MailService mailService;
 
     @Autowired
-    private NotificationService notificationService; // Injeksi NotificationService
+    private NotificationService notificationService;
 
-    // Milestone streak untuk notifikasi
+    // milestone streaks
     private static final int[] MILESTONES = {7, 30, 100, 365, 1000};
 
     /**
-     * Metode ini mencatat interaksi pengguna dan memperbarui streak,
-     * serta mengirim notifikasi jika diperlukan.
+     * record interaction and update streak
+     * send notifications for milestones and resets
      *
-     * @param userId ID pengguna yang berinteraksi.
-     * @return Objek Streak yang diperbarui.
+     * @param userId ID 
+     * @return streak obhect after update
      */
-    @Transactional // Pastikan operasi ini berjalan dalam satu transaksi database
+    @Transactional 
     public Streak recordInteraction(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan dengan ID: " + userId));
@@ -51,48 +50,46 @@ public class StreakService {
                 });
 
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
-        int oldStreak = streak.getCurrentStreak(); // Simpan streak lama untuk perbandingan
+        int oldStreak = streak.getCurrentStreak();
 
         if (streak.getLastInteractionDate() == null) {
-            // Interaksi pertama kali untuk pengguna ini
+            // first interaction in the day (streak +1)
             streak.setCurrentStreak(1);
         } else if (streak.getLastInteractionDate().isEqual(today)) {
-            // User sudah berinteraksi hari ini, tidak perlu update streak
-            System.out.println("Pengguna sudah berinteraksi hari ini. Streak tidak berubah.");
-            return streak; // Mengembalikan streak yang sudah ada tanpa perubahan
+            // user has already interacted today (streak unchanged)
+            System.out.println("User already interacted today. Streak unchanged.");
+            return streak;
         } else if (streak.getLastInteractionDate().plusDays(1).isEqual(today)) {
-            // Interaksi dilakukan sehari setelah interaksi terakhir (streak berlanjut)
+            // Interaction done the next day (streak +1)
             streak.setCurrentStreak(streak.getCurrentStreak() + 1);
         } else {
-            // Interaksi dilakukan lebih dari sehari setelah interaksi terakhir (streak direset)
-            System.out.println("Interaksi terputus. Streak direset.");
-            // ** Notifikasi Streak Reset **
-            String resetMessage = "Streak Anda terputus pada " + oldStreak + " hari. Mari mulai yang baru!";
+            // Skipped intaction (reset streak)
+            System.out.println("Streak reset due to skipped interaction.");
+            String resetMessage = "Your streak was reset from " + oldStreak + " days. Let's create a new one!";
             notificationService.createNotification(userId, resetMessage, "STREAK_RESET");
-            mailService.sendEmail(user.getEmail(), "Streak Terputus di Clockin!", resetMessage);
+            mailService.sendEmail(user.getEmail(), "Your streak being reset in Clockin :'(!", resetMessage);
             streak.setCurrentStreak(1);
         }
 
-        // Perbarui max streak jika current streak lebih besar
+        // max streak update if max streak is less than current streak
         if (streak.getCurrentStreak() > streak.getMaxStreak()) {
             streak.setMaxStreak(streak.getCurrentStreak());
         }
 
-        // Set tanggal interaksi terakhir ke hari ini
+        // set last interaction date to today
         streak.setLastInteractionDate(today);
 
-        // Simpan atau perbarui record streak di database
+        // save the updated streak
         Streak updatedStreak = streakRepository.save(streak);
 
-        // ** Notifikasi Milestone Streak **
-        // Cek hanya jika streak bertambah
+        // check for milestones
         if (updatedStreak.getCurrentStreak() > oldStreak) {
             for (int milestone : MILESTONES) {
                 if (updatedStreak.getCurrentStreak() == milestone) {
-                    String milestoneMessage = "Selamat! Anda mencapai streak " + milestone + " hari di Clockin!";
+                    String milestoneMessage = "CONGRATULATION! YOU'RE ACHIEVING " + milestone + " DAYS STREAK IN Clockin!";
                     notificationService.createNotification(userId, milestoneMessage, "STREAK_MILESTONE");
-                    mailService.sendEmail(user.getEmail(), "Selamat atas Streak " + milestone + " Hari Anda!", milestoneMessage);
-                    break; // Keluar setelah menemukan milestone yang cocok
+                    mailService.sendEmail(user.getEmail(), "CONGRATULATION FOR YOUR  " + milestone + " DAYS STREAK!", milestoneMessage);
+                    break;
                 }
             }
         }
@@ -100,9 +97,9 @@ public class StreakService {
     }
 
     /**
-     * Metode untuk mendapatkan streak pengguna berdasarkan ID pengguna.
-     * @param userId ID pengguna.
-     * @return Objek Optional<Streak>.
+     * streaks by user ID.
+     * @param userId ID 
+     * @return Optional<Streak>
      */
     public Optional<Streak> getStreakByUserId(Long userId) {
         User user = userRepository.findById(userId)
