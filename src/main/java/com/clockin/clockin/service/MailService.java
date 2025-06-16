@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 public class MailService {
 
     @Autowired
-    private JavaMailSender mailSender; // Injeksi JavaMailSender
+    private JavaMailSender mailSender;
 
     /**
-     * Mengirim email sederhana.
-     * @param to Alamat email tujuan.
-     * @param subject Subjek email.
-     * @param text Isi email.
+     * sending email
+     * @param email address
+     * @param email subject
+     * @param email body
      */
     public void sendEmail(String to, String subject, String text) {
         try {
@@ -29,8 +29,6 @@ public class MailService {
             System.out.println("Email has sent to: " + to + " with subject: " + subject);
         } catch (MailException e) {
             System.err.println("Failed to sent to " + to + ": " + e.getMessage());
-            // Dalam aplikasi produksi, Anda mungkin ingin mencatat error ini ke sistem log
-            // atau mencoba ulang pengiriman.
             throw new RuntimeException("Failed to sent mail: " + e.getMessage());
         }
     }

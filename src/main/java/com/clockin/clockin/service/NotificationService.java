@@ -21,11 +21,11 @@ public class NotificationService {
     private UserRepository userRepository;
 
     /**
-     * Membuat dan menyimpan notifikasi baru untuk pengguna.
-     * @param userId ID pengguna.
-     * @param message Pesan notifikasi.
-     * @param type Tipe notifikasi (misalnya, "STREAK_MILESTONE", "STREAK_RESET").
-     * @return Objek Notifikasi yang dibuat.
+     * create a new notification for a user.
+     * @param userId ID
+     * @param message
+     * @param type notification type (ex, "STREAK_MILESTONE", "STREAK_RESET").
+     * @return notification object
      */
     @Transactional
     public Notification createNotification(Long userId, String message, String type) {
@@ -42,9 +42,9 @@ public class NotificationService {
     }
 
     /**
-     * Mendapatkan semua notifikasi untuk pengguna tertentu, diurutkan dari yang terbaru.
-     * @param userId ID pengguna.
-     * @return Daftar Notifikasi.
+     * All notifications for a specific user.
+     * @param userId ID
+     * @return Notification list
      */
     public List<Notification> getNotificationsByUserId(Long userId) {
         User user = userRepository.findById(userId)
@@ -53,9 +53,9 @@ public class NotificationService {
     }
 
     /**
-     * Mendapatkan semua notifikasi yang belum dibaca untuk pengguna tertentu.
-     * @param userId ID pengguna.
-     * @return Daftar Notifikasi yang belum dibaca.
+     * get all unread notifications for a specific user
+     * @param userId ID
+     * @return unread Notification list
      */
     public List<Notification> getUnreadNotificationsByUserId(Long userId) {
         User user = userRepository.findById(userId)
@@ -64,9 +64,9 @@ public class NotificationService {
     }
 
     /**
-     * Menandai notifikasi sebagai sudah dibaca.
-     * @param notificationId ID notifikasi yang akan ditandai.
-     * @return True jika berhasil, false jika tidak ditemukan.
+     * flagged a notification as read.
+     * @param notificationId ID 
+     * @return True if success, false jif not found
      */
     @Transactional
     public boolean markNotificationAsRead(Long notificationId) {
@@ -81,9 +81,9 @@ public class NotificationService {
     }
 
     /**
-     * Menghapus notifikasi.
-     * @param notificationId ID notifikasi yang akan dihapus.
-     * @return True jika berhasil, false jika tidak ditemukan.
+     * delete notification by ID.
+     * @param notificationId ID 
+     * @return True if success, false jif not found
      */
     @Transactional
     public boolean deleteNotification(Long notificationId) {
