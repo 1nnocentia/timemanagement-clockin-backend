@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByUser(User user);
     Optional<Task> findByIdAndUser(Long id, User user);
+
+    boolean existsByIdAndUser(Long id, User user);
 }

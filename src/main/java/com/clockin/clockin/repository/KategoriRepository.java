@@ -14,5 +14,6 @@ public interface KategoriRepository extends JpaRepository<Kategori, Long> {
     Optional<Kategori> findByNamaKategoriAndUser(String namaKategori, User user);
     List<Kategori> findByUser(User user);
     Optional<Kategori> findByIdAndUser(Long id, User user);
+    boolean existsByIdAndUser(Long id, User user);
 }
 

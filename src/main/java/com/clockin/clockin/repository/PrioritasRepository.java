@@ -12,9 +12,9 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PrioritasRepository extends JpaRepository<Prioritas, Long> {
-    Optional<Kategori> findByNamaPrioritasAndUser(String namaPrioritas, User user);
-    List<Kategori> findByUser(User user);
-    Optional<Kategori> findByIdAndUser(Long id, User user);
+    Optional<Prioritas> findByNamaPrioritasAndUser(String namaPrioritas, User user);
+    List<Prioritas> findByUser(User user);
+    Optional<Prioritas> findByIdAndUser(Long id, User user);
+
+    boolean existsByIdAndUser(Long id, User user);
 }
-
-

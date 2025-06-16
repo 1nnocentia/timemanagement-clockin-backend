@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface DataJadwalRepository extends JpaRepository<DataJadwal, Long> {
     List<DataJadwal> findByUser(User user);
     Optional<DataJadwal> findByIdAndUser(Long id, User user);
+    boolean existsByIdAndUser(Long id, User user);
 }

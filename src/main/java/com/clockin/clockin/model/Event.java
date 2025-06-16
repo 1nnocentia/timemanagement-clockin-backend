@@ -21,10 +21,10 @@ public class Event {
     private LocalDate tanggal;
 
     @Column(nullable = false)
-    private LocalTime jam_mulai;
+    private LocalTime jamMulai;
 
     @Column(nullable = false)
-    private LocalTime jam_akhir;
+    private LocalTime jamAkhir;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
