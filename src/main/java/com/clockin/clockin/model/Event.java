@@ -15,7 +15,7 @@ public class Event {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_event;
+    private Long id;
 
     @Column(nullable = false)
     private LocalDate tanggal;
@@ -25,5 +25,8 @@ public class Event {
 
     @Column(nullable = false)
     private LocalTime jam_akhir;
-}
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+}
