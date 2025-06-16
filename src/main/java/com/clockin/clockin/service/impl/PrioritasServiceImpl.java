@@ -29,7 +29,6 @@ public class PrioritasServiceImpl implements PrioritasService {
     @Autowired
     private UserRepository userRepository;
 
-    // Metode helper untuk mendapatkan User yang sedang terautentikasi
     private User getAuthenticatedUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String usernameFromPrincipal;
@@ -57,7 +56,6 @@ public class PrioritasServiceImpl implements PrioritasService {
         return userOptional.get();
     }
 
-    // Metode helper untuk mengkonversi Entity ke DTO
     private PrioritasDTO convertToDTO(Prioritas prioritas) {
         if (prioritas == null) {
             return null;
@@ -68,7 +66,6 @@ public class PrioritasServiceImpl implements PrioritasService {
         return dto;
     }
 
-    // Metode helper untuk mengkonversi DTO ke Entity
     private Prioritas convertToEntity(PrioritasDTO dto) {
         if (dto == null) {
             return null;
@@ -84,7 +81,6 @@ public class PrioritasServiceImpl implements PrioritasService {
     public PrioritasDTO createPrioritas(PrioritasDTO dto) {
         User authenticatedUser = getAuthenticatedUser();
 
-        // Menggunakan prioritasRepository, bukan kategoriRepository
         if (prioritasRepository.findByNamaPrioritasAndUser(dto.getNamaPrioritas(), authenticatedUser).isPresent()) {
             throw new RuntimeException("Prioritas dengan nama '" + dto.getNamaPrioritas() + "' sudah ada untuk pengguna ini.");
         }
@@ -98,7 +94,6 @@ public class PrioritasServiceImpl implements PrioritasService {
     @Override
     public PrioritasDTO getPrioritasById(Long id) {
         User authenticatedUser = getAuthenticatedUser();
-        // Menggunakan prioritasRepository
         Prioritas prioritas = prioritasRepository.findByIdAndUser(id, authenticatedUser)
                 .orElseThrow(() -> new RuntimeException("Prioritas tidak ditemukan atau Anda tidak memiliki akses."));
         return convertToDTO(prioritas);
@@ -107,7 +102,6 @@ public class PrioritasServiceImpl implements PrioritasService {
     @Override
     public List<PrioritasDTO> getAllPrioritas() {
         User authenticatedUser = getAuthenticatedUser();
-        // Menggunakan prioritasRepository
         List<Prioritas> prioritasList = prioritasRepository.findByUser(authenticatedUser);
         return prioritasList.stream()
                 .map(this::convertToDTO)
@@ -118,11 +112,9 @@ public class PrioritasServiceImpl implements PrioritasService {
     @Transactional
     public PrioritasDTO updatePrioritas(Long id, PrioritasDTO dto) {
         User authenticatedUser = getAuthenticatedUser();
-        // Menggunakan prioritasRepository
         Prioritas existingPrioritas = prioritasRepository.findByIdAndUser(id, authenticatedUser)
                 .orElseThrow(() -> new RuntimeException("Prioritas tidak ditemukan atau Anda tidak memiliki akses."));
 
-        // Menggunakan prioritasRepository
         if (!existingPrioritas.getNamaPrioritas().equalsIgnoreCase(dto.getNamaPrioritas()) &&
             prioritasRepository.findByNamaPrioritasAndUser(dto.getNamaPrioritas(), authenticatedUser).isPresent()) {
             throw new RuntimeException("Prioritas dengan nama '" + dto.getNamaPrioritas() + "' sudah ada untuk pengguna ini.");
@@ -137,7 +129,6 @@ public class PrioritasServiceImpl implements PrioritasService {
     @Transactional
     public void deletePrioritas(Long id) {
         User authenticatedUser = getAuthenticatedUser();
-        // Menggunakan prioritasRepository
         if (!prioritasRepository.existsByIdAndUser(id, authenticatedUser)) {
             throw new RuntimeException("Prioritas tidak ditemukan atau Anda tidak memiliki akses untuk menghapus.");
         }
