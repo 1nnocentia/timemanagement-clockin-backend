@@ -3,6 +3,8 @@ package com.clockin.clockin.service;
 import com.clockin.clockin.model.User;
 import com.clockin.clockin.repository.UserRepository;
 import com.clockin.clockin.config.JwtUtil;
+import com.clockin.clockin.dto.UserUpdateRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,8 +25,9 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    // ** MODIFIKASI: Pastikan ini PRIVATE dan di-autowire. **
     @Autowired
-    public UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -43,7 +46,6 @@ public class UserService {
     // Metode untuk mendaftarkan pengguna baru (signup)
     @Transactional
     public User registerUser(User user) {
-
         if (userRepository.findByUsername(user.getUsername()) != null) {
             throw new RuntimeException("Username '" + user.getUsername() + "' sudah ada.");
         }
@@ -79,6 +81,16 @@ public class UserService {
         }
     }
 
+    // ** BARU: Metode untuk mendapatkan User berdasarkan username atau email **
+    // Ini adalah metode yang harus dipanggil oleh UserController
+    public Optional<User> getUserByUsernameOrEmail(String usernameOrEmail) {
+        User user = userRepository.findByUsername(usernameOrEmail);
+        if (user == null) {
+            user = userRepository.findByEmail(usernameOrEmail);
+        }
+        return Optional.ofNullable(user); // Mengembalikan Optional.empty() jika user null
+    }
+
     // Metode untuk mendapatkan semua pengguna
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -99,44 +111,56 @@ public class UserService {
      * @throws RuntimeException if the user is not found or the username change cooldown is violated.
      */
     @Transactional
-    public User updateUser(Long id, User userDetails) {
+    public User updateUser(Long id, UserUpdateRequest userUpdateRequest) { // MODIFIKASI: Menerima UserUpdateRequest
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
 
-        existingUser.setNama(userDetails.getNama());
+        // MODIFIKASI: Hanya update 'nama' jika disediakan dalam request body dan tidak kosong
+        if (userUpdateRequest.getNama() != null && !userUpdateRequest.getNama().isEmpty()) {
+            existingUser.setNama(userUpdateRequest.getNama());
+        }
 
-        if (!existingUser.getUsername().equals(userDetails.getUsername())) {
+        // MODIFIKASI: Hanya update 'username' jika disediakan dan berbeda dari yang ada
+        if (userUpdateRequest.getUsername() != null && !userUpdateRequest.getUsername().isEmpty() &&
+            !existingUser.getUsername().equals(userUpdateRequest.getUsername())) {
+            
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
             if (existingUser.getLastUsernameChangeDate() != null &&
                 existingUser.getLastUsernameChangeDate().plusDays(USERNAME_CHANGE_COOLDOWN_DAYS).isAfter(today)) {
                 throw new RuntimeException("You can only change your username every " + USERNAME_CHANGE_COOLDOWN_DAYS + " days.");
             }
-            User userWithNewUsername = userRepository.findByUsername(userDetails.getUsername());
+            User userWithNewUsername = userRepository.findByUsername(userUpdateRequest.getUsername());
             if (userWithNewUsername != null && !userWithNewUsername.getId().equals(id)) {
-                throw new RuntimeException("Username '" + userDetails.getUsername() + "' is already in use by another user.");
+                throw new RuntimeException("Username '" + userUpdateRequest.getUsername() + "' is already in use by another user.");
             }
-            existingUser.setUsername(userDetails.getUsername());
+            existingUser.setUsername(userUpdateRequest.getUsername());
             existingUser.setLastUsernameChangeDate(today);
         }
 
-        if (!existingUser.getEmail().equals(userDetails.getEmail())) {
-            User userWithNewEmail = userRepository.findByEmail(userDetails.getEmail());
+        // MODIFIKASI: Hanya update 'email' jika disediakan dan berbeda dari yang ada
+        if (userUpdateRequest.getEmail() != null && !userUpdateRequest.getEmail().isEmpty() &&
+            !existingUser.getEmail().equals(userUpdateRequest.getEmail())) {
+            
+            User userWithNewEmail = userRepository.findByEmail(userUpdateRequest.getEmail());
             if (userWithNewEmail != null && !userWithNewEmail.getId().equals(id)) {
-                throw new RuntimeException("Email '" + userDetails.getEmail() + "' is already in use by another user.");
+                throw new RuntimeException("Email '" + userUpdateRequest.getEmail() + "' is already in use by another user.");
             }
-            existingUser.setEmail(userDetails.getEmail());
+            existingUser.setEmail(userUpdateRequest.getEmail());
         }
 
-        if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
-            existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+        // Logika update 'password' sudah memiliki null/empty check
+        if (userUpdateRequest.getPassword() != null && !userUpdateRequest.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(userUpdateRequest.getPassword()));
         }
 
-        if (userDetails.getProfilePictureId() != null && !userDetails.getProfilePictureId().isEmpty()) {
-            existingUser.setProfilePictureId(userDetails.getProfilePictureId());
+        // Logika update 'profilePictureId' sudah memiliki null/empty check
+        if (userUpdateRequest.getProfilePictureId() != null && !userUpdateRequest.getProfilePictureId().isEmpty()) {
+            existingUser.setProfilePictureId(userUpdateRequest.getProfilePictureId());
         }
 
         return userRepository.save(existingUser);
     }
+
 
     // Metode untuk menghapus pengguna
     @Transactional
