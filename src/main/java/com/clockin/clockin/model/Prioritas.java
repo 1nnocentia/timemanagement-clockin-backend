@@ -12,7 +12,7 @@ public class Prioritas {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_prioritas;
+    private Long id;
 
     @Column(name = "nama_prioritas", nullable = false)
     private String namaPrioritas;  // e.g., Emergency, Urgent, Preventive, Non-Critical

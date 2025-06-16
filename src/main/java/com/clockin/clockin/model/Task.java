@@ -15,7 +15,7 @@ public class Task {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_task;
+    private Long id;
 
     @Column(nullable = false)
     private LocalDate tanggal;

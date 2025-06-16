@@ -55,7 +55,7 @@ public class EventServiceImpl implements EventService {
 
     private EventDTO mapToDTO(Event event) {
         EventDTO dto = new EventDTO();
-        dto.setId(event.getId_event());
+        dto.setId(event.getId());
         dto.setTanggal(event.getTanggal());
         dto.setJamMulai(event.getJam_mulai());
         dto.setJamAkhir(event.getJam_akhir());
@@ -64,7 +64,7 @@ public class EventServiceImpl implements EventService {
 
     private Event mapToEntity(EventDTO dto) {
         Event event = new Event();
-        event.setId_event(dto.getId());
+        event.setId(dto.getId());
         event.setTanggal(dto.getTanggal());
         event.setJam_mulai(dto.getJamMulai());
         event.setJam_akhir(dto.getJamAkhir());

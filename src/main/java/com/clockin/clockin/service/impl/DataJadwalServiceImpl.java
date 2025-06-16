@@ -73,13 +73,13 @@ public class DataJadwalServiceImpl implements DataJadwalService {
 
     private DataJadwalDTO mapToDTO(DataJadwal jadwal) {
         DataJadwalDTO dto = new DataJadwalDTO();
-        dto.setIdJadwal(jadwal.getId_jadwal());
-        dto.setJudulJadwal(jadwal.getJudulJadwal());
-        dto.setDeskripsiJadwal(jadwal.getDeskripsiJadwal());
-        dto.setEventId(jadwal.getEvent().getId_event());
-        dto.setTaskId(jadwal.getTask().getId_task());
-        dto.setKategoriId(jadwal.getKategori().getId_kategori());
-        dto.setPrioritasId(jadwal.getPrioritas().getId_prioritas());
+        dto.setIdJadwal(jadwal.getId());
+        dto.setJudulJadwal(jadwal.getId());
+        dto.setDeskripsiJadwal(jadwal.getId());
+        dto.setEventId(jadwal.getEvent().getId());
+        dto.setTaskId(jadwal.getTask().getId());
+        dto.setKategoriId(jadwal.getKategori().getId());
+        dto.setPrioritasId(jadwal.getPrioritas().getId());
         return dto;
     }
 }

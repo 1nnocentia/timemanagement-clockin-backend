@@ -12,7 +12,7 @@ public class DataJadwal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_jadwal;
+    private Long id;
 
     @Column(name = "judul_jadwal", nullable = false)
     private String judulJadwal;
