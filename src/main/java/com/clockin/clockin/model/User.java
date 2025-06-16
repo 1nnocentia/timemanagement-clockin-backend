@@ -60,4 +60,9 @@ public class User {
         // jika melakukan update maka akan di simpan tanggal saat perubahan terjadi
         this.lastUsernameChangeDate = LocalDate.now();
     }
+
+    public User orElseThrow(Object object) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'orElseThrow'");
+    }
 }

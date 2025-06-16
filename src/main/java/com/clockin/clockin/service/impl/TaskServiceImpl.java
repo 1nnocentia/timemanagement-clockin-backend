@@ -29,7 +29,6 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private UserRepository userRepository;
 
-    // Metode helper untuk mendapatkan User yang sedang terautentikasi
     private User getAuthenticatedUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String usernameFromPrincipal;
@@ -57,7 +56,6 @@ public class TaskServiceImpl implements TaskService {
         return userOptional.get();
     }
 
-    // Metode helper untuk mengkonversi Entity ke DTO
     private TaskDTO convertToDTO(Task task) {
         if (task == null) {
             return null;
@@ -70,7 +68,6 @@ public class TaskServiceImpl implements TaskService {
         return dto;
     }
 
-    // Metode helper untuk mengkonversi DTO ke Entity
     private Task convertToEntity(TaskDTO dto) {
         if (dto == null) {
             return null;

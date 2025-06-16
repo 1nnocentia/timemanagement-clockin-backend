@@ -29,7 +29,6 @@ public class EventServiceImpl implements EventService {
     @Autowired
     private UserRepository userRepository;
 
-    // Metode helper untuk mendapatkan User yang sedang terautentikasi
     private User getAuthenticatedUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String usernameFromPrincipal;
@@ -57,7 +56,6 @@ public class EventServiceImpl implements EventService {
         return userOptional.get();
     }
 
-    // Metode helper untuk mengkonversi Entity ke DTO
     private EventDTO convertToDTO(Event event) {
         if (event == null) {
             return null;
@@ -70,7 +68,6 @@ public class EventServiceImpl implements EventService {
         return dto;
     }
 
-    // Metode helper untuk mengkonversi DTO ke Entity
     private Event convertToEntity(EventDTO dto) {
         if (dto == null) {
             return null;

@@ -9,8 +9,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger; // Import logger
-import org.slf4j.LoggerFactory; // Import logger factory
+import org.slf4j.Logger; 
+import org.slf4j.LoggerFactory; 
 
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +39,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
     @Autowired
     private UserRepository userRepository;
 
-    // Metode helper untuk mendapatkan User yang sedang terautentikasi
     private User getAuthenticatedUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String usernameFromPrincipal;
@@ -67,7 +66,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
         return userOptional.get();
     }
 
-    // Metode helper untuk mengkonversi Entity ke DTO
     private DataJadwalDTO convertToDTO(DataJadwal dataJadwal) {
         if (dataJadwal == null) {
             return null;
@@ -88,7 +86,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
     public DataJadwalDTO create(DataJadwalDTO dto) {
         User authenticatedUser = getAuthenticatedUser();
 
-        // Validasi dan ambil objek Event, Task, Kategori, Prioritas
         Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
                 .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
         Task task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
@@ -105,7 +102,7 @@ public class DataJadwalServiceImpl implements DataJadwalService {
         dataJadwal.setTask(task);
         dataJadwal.setKategori(kategori);
         dataJadwal.setPrioritas(prioritas);
-        dataJadwal.setUser(authenticatedUser); // Set user pemilik DataJadwal
+        dataJadwal.setUser(authenticatedUser);
 
         DataJadwal savedDataJadwal = dataJadwalRepository.save(dataJadwal);
         return convertToDTO(savedDataJadwal);
@@ -135,7 +132,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
         DataJadwal existingDataJadwal = dataJadwalRepository.findByIdAndUser(id, authenticatedUser)
                 .orElseThrow(() -> new RuntimeException("Data Jadwal tidak ditemukan atau Anda tidak memiliki akses."));
 
-        // Validasi dan ambil objek Event, Task, Kategori, Prioritas jika ID diubah
         if (dto.getEventId() != null && !dto.getEventId().equals(existingDataJadwal.getEvent().getId())) {
             Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
                 .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
@@ -157,7 +153,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
             existingDataJadwal.setPrioritas(prioritas);
         }
 
-        // Perbarui judul dan deskripsi jika disediakan dan tidak kosong
         if (dto.getJudulJadwal() != null && !dto.getJudulJadwal().isEmpty()) {
             existingDataJadwal.setJudulJadwal(dto.getJudulJadwal());
         }
