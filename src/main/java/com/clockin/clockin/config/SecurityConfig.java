@@ -92,20 +92,23 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable) // Menonaktifkan CSRF untuk API RESTful
             .authorizeHttpRequests(authorize -> authorize
-                // Mengizinkan akses tanpa otentikasi ke endpoint-endpoint ini
-                .requestMatchers(
-                    "/api/signup",
-                    "/api/login",
-                    "/api/forgot-password/**",
-                    "/api/logout", // Izinkan akses ke endpoint logout
-                    "/swagger-ui.html", // Izinkan akses untuk Swagger UI
-                    "/swagger-ui/**", // Izinkan akses untuk aset Swagger UI
-                    "/v3/api-docs/**", // Izinkan akses untuk spesifikasi OpenAPI
-                    "/webjars/**" // Izinkan akses untuk resource webjars
-                ).permitAll()
-                // Membutuhkan otentikasi untuk semua permintaan lainnya
-                .anyRequest().authenticated()
-            )
+    .requestMatchers(
+        "/api/signup",
+        "/api/login",
+        "/api/forgot-password/**",
+        "/api/logout", // Izinkan akses ke endpoint logout
+        "/swagger-ui.html", // Izinkan akses untuk Swagger UI
+        "/swagger-ui/**", // Izinkan akses untuk aset Swagger UI
+        "/v3/api-docs/**", // Izinkan akses untuk spesifikasi OpenAPI
+        "/webjars/**", // Izinkan akses untuk resource webjars
+        "/api/data-jadwal/**", // Izinkan akses untuk endpoint jadwal
+        "/api/events/**", // Izinkan akses untuk endpoint events
+        "/api/tasks/**", // Izinkan akses untuk endpoint tasks
+        "/api/kategori/**", // Izinkan akses untuk endpoint kategori
+        "/api/prioritas/**" // Izinkan akses untuk endpoint prioritas
+    ).permitAll()
+    .anyRequest().authenticated()
+)
             // Konfigurasi manajemen sesi agar stateless (tidak menyimpan sesi di server)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // Menambahkan AuthenticationProvider kustom
