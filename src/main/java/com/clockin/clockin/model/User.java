@@ -57,7 +57,7 @@ public class User {
         this.username = username;
         this.email = email;
         this.password = password;
-        // Inisialisasi tanggal perubahan sama dengan tanggal hari ini
+        // jika melakukan update maka akan di simpan tanggal saat perubahan terjadi
         this.lastUsernameChangeDate = LocalDate.now();
     }
 }

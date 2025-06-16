@@ -21,11 +21,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-// Anotasi @Service menandakan kelas ini adalah komponen service Spring
 @Service
 public class UserService {
 
-    // ** MODIFIKASI: Pastikan ini PRIVATE dan di-autowire. **
     @Autowired
     private UserRepository userRepository;
 
@@ -38,12 +36,12 @@ public class UserService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // Batasan hari untuk perubahan username
+    // username change cooldown in days
     private static final int USERNAME_CHANGE_COOLDOWN_DAYS = 30;
-    // Masa berlaku token reset password dalam menit
+    // reset password token validity in minutes
     private static final long RESET_TOKEN_VALIDITY_MINUTES = 15;
 
-    // Metode untuk mendaftarkan pengguna baru (signup)
+    // signup
     @Transactional
     public User registerUser(User user) {
         if (userRepository.findByUsername(user.getUsername()) != null) {
@@ -56,15 +54,15 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setLastUsernameChangeDate(LocalDate.now(ZoneOffset.UTC));
         if (user.getProfilePictureId() == null || user.getProfilePictureId().isEmpty()) {
-            user.setProfilePictureId("avatar-1"); // Set default avatar
+            user.setProfilePictureId("aset_aplikasi_personal_1"); // defaultnya 1
         }
         return userRepository.save(user);
     }
 
     /**
-     * Mengautentikasi pengguna dan mengembalikan token JWT jika berhasil.
-     * @param usernameOrEmail Username atau email pengguna.
-     * @param password Password pengguna.
+     * User authentication and JWT token generation.
+     * @param usernameOrEmail
+     * @param password
      * @return Optional<String> containing the JWT token if authentication is successful, or Optional.empty() if it fails.
      */
     public Optional<String> authenticateAndGenerateToken(String usernameOrEmail, String password) {
@@ -76,51 +74,56 @@ public class UserService {
             String jwtToken = jwtUtil.generateToken(userDetails);
             return Optional.of(jwtToken);
         } catch (Exception e) {
-            System.err.println("Autentikasi gagal untuk user: " + usernameOrEmail + ". Error: " + e.getMessage());
+            System.err.println("Autentikasi failed for user_id: " + usernameOrEmail + ". Error: " + e.getMessage());
             return Optional.empty();
         }
     }
 
-    // ** BARU: Metode untuk mendapatkan User berdasarkan username atau email **
-    // Ini adalah metode yang harus dipanggil oleh UserController
+    /**
+     * Get user by username or email.
+     * If True = return optional user
+     * If False = return empty optional
+     *
+     * @param usernameOrEmail
+     * @return Optional<User> or Optional.empty()
+     */
     public Optional<User> getUserByUsernameOrEmail(String usernameOrEmail) {
         User user = userRepository.findByUsername(usernameOrEmail);
         if (user == null) {
             user = userRepository.findByEmail(usernameOrEmail);
         }
-        return Optional.ofNullable(user); // Mengembalikan Optional.empty() jika user null
+        return Optional.ofNullable(user);
     }
 
-    // Metode untuk mendapatkan semua pengguna
+    // get all users
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    // Metode untuk mendapatkan pengguna berdasarkan ID
+    // get user by id
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
     /**
-     * Metode untuk memperbarui detail pengguna.
-     * Termasuk logika untuk batasan perubahan username dan hashing password.
+     * update user details
      *
-     * @param id The ID of the user to update.
-     * @param userDetails User object with details to be updated.
-     * @return The updated User object.
-     * @throws RuntimeException if the user is not found or the username change cooldown is violated.
+     * @param id - user_id
+     * @param userDetails - UserUpdateRequest object containing the details to update
+     * @return updated user object
+     * @throws RuntimeException if the user is not found or the username change cooldown is violated
      */
     @Transactional
-    public User updateUser(Long id, UserUpdateRequest userUpdateRequest) { // MODIFIKASI: Menerima UserUpdateRequest
+    public User updateUser(Long id, UserUpdateRequest userUpdateRequest) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
 
-        // MODIFIKASI: Hanya update 'nama' jika disediakan dalam request body dan tidak kosong
+        // name update
         if (userUpdateRequest.getNama() != null && !userUpdateRequest.getNama().isEmpty()) {
             existingUser.setNama(userUpdateRequest.getNama());
         }
 
-        // MODIFIKASI: Hanya update 'username' jika disediakan dan berbeda dari yang ada
+       // username update (cooldown check and unique check)
         if (userUpdateRequest.getUsername() != null && !userUpdateRequest.getUsername().isEmpty() &&
             !existingUser.getUsername().equals(userUpdateRequest.getUsername())) {
             
@@ -137,7 +140,7 @@ public class UserService {
             existingUser.setLastUsernameChangeDate(today);
         }
 
-        // MODIFIKASI: Hanya update 'email' jika disediakan dan berbeda dari yang ada
+        // email update (unique check)
         if (userUpdateRequest.getEmail() != null && !userUpdateRequest.getEmail().isEmpty() &&
             !existingUser.getEmail().equals(userUpdateRequest.getEmail())) {
             
@@ -148,12 +151,12 @@ public class UserService {
             existingUser.setEmail(userUpdateRequest.getEmail());
         }
 
-        // Logika update 'password' sudah memiliki null/empty check
+        // password update
         if (userUpdateRequest.getPassword() != null && !userUpdateRequest.getPassword().isEmpty()) {
             existingUser.setPassword(passwordEncoder.encode(userUpdateRequest.getPassword()));
         }
 
-        // Logika update 'profilePictureId' sudah memiliki null/empty check
+        // profile update
         if (userUpdateRequest.getProfilePictureId() != null && !userUpdateRequest.getProfilePictureId().isEmpty()) {
             existingUser.setProfilePictureId(userUpdateRequest.getProfilePictureId());
         }
@@ -161,8 +164,7 @@ public class UserService {
         return userRepository.save(existingUser);
     }
 
-
-    // Metode untuk menghapus pengguna
+    // delete user by id
     @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
@@ -171,6 +173,12 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
+    /**
+     * Initiate password reset by generating a token and setting its expiry date
+     * @param email 
+     * @return generated reset token
+     * @throws RuntimeException if user with the given email is not found
+     */
     @Transactional
     public String initiatePasswordReset(String email) {
         User user = userRepository.findByEmail(email);
@@ -189,6 +197,12 @@ public class UserService {
         return token;
     }
 
+    /**
+     * Reset user password using the provided token and new password.
+     * @param token - reset password token
+     * @param newPassword - new password to set
+     * @throws RuntimeException if the token is invalid or expired
+     */
     @Transactional
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findByResetPasswordToken(token);
