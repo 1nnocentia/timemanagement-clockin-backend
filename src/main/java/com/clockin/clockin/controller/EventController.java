@@ -1,49 +1,41 @@
 package com.clockin.clockin.controller;
 
-import com.clockin.clockin.model.Event;
+import com.clockin.clockin.dto.EventDTO;
 import com.clockin.clockin.service.EventService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/events")
-@CrossOrigin(origins = "*")
 public class EventController {
 
-    private final EventService service;
+    @Autowired
+    private EventService eventService;
 
-    public EventController(EventService service) {
-        this.service = service;
-    }
-
-    @GetMapping
-    public List<Event> getAll() {
-        return service.getAll();
+    @PostMapping
+    public EventDTO createEvent(@RequestBody EventDTO dto) {
+        return eventService.createEvent(dto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Event> getById(@PathVariable Long id) {
-        return service.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public EventDTO getEventById(@PathVariable Long id) {
+        return eventService.getEventById(id);
     }
 
-    @PostMapping
-    public ResponseEntity<Event> create(@RequestBody Event event) {
-        return ResponseEntity.ok(service.create(event));
+    @GetMapping
+    public List<EventDTO> getAllEvents() {
+        return eventService.getAllEvents();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Event> update(@PathVariable Long id, @RequestBody Event event) {
-        return ResponseEntity.ok(service.update(id, event));
+    public EventDTO updateEvent(@PathVariable Long id, @RequestBody EventDTO dto) {
+        return eventService.updateEvent(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    public void deleteEvent(@PathVariable Long id) {
+        eventService.deleteEvent(id);
     }
 }
-

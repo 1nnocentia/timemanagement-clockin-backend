@@ -1,48 +1,41 @@
 package com.clockin.clockin.controller;
 
-import com.clockin.clockin.model.Prioritas;
+import com.clockin.clockin.dto.PrioritasDTO;
 import com.clockin.clockin.service.PrioritasService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/prioritas")
-@CrossOrigin(origins = "*")
 public class PrioritasController {
 
-    private final PrioritasService service;
+    @Autowired
+    private PrioritasService prioritasService;
 
-    public PrioritasController(PrioritasService service) {
-        this.service = service;
-    }
-
-    @GetMapping
-    public List<Prioritas> getAll() {
-        return service.getAll();
+    @PostMapping
+    public PrioritasDTO create(@RequestBody PrioritasDTO dto) {
+        return prioritasService.createPrioritas(dto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Prioritas> getById(@PathVariable Long id) {
-        return service.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public PrioritasDTO getById(@PathVariable Long id) {
+        return prioritasService.getPrioritasById(id);
     }
 
-    @PostMapping
-    public ResponseEntity<Prioritas> create(@RequestBody Prioritas prioritas) {
-        return ResponseEntity.ok(service.create(prioritas));
+    @GetMapping
+    public List<PrioritasDTO> getAll() {
+        return prioritasService.getAllPrioritas();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Prioritas> update(@PathVariable Long id, @RequestBody Prioritas prioritas) {
-        return ResponseEntity.ok(service.update(id, prioritas));
+    public PrioritasDTO update(@PathVariable Long id, @RequestBody PrioritasDTO dto) {
+        return prioritasService.updatePrioritas(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    public void delete(@PathVariable Long id) {
+        prioritasService.deletePrioritas(id);
     }
 }

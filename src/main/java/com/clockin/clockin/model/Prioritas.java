@@ -15,5 +15,5 @@ public class Prioritas {
     private Long id_prioritas;
 
     @Column(name = "nama_prioritas", nullable = false)
-    private String namaPrioritas;
+    private String namaPrioritas;  // e.g., Emergency, Urgent, Preventive, Non-Critical
 }

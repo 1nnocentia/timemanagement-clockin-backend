@@ -1,48 +1,42 @@
 package com.clockin.clockin.controller;
 
-import com.clockin.clockin.model.Kategori;
+import com.clockin.clockin.dto.KategoriDTO;
 import com.clockin.clockin.service.KategoriService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/kategori")
-@CrossOrigin(origins = "*")
 public class KategoriController {
 
-    private final KategoriService service;
+    @Autowired
+    private KategoriService kategoriService;
 
-    public KategoriController(KategoriService service) {
-        this.service = service;
-    }
-
-    @GetMapping
-    public List<Kategori> getAll() {
-        return service.getAll();
+    @PostMapping
+    public KategoriDTO create(@RequestBody KategoriDTO dto) {
+        return kategoriService.createKategori(dto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Kategori> getById(@PathVariable Long id) {
-        return service.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public KategoriDTO getById(@PathVariable Long id) {
+        return kategoriService.getKategoriById(id);
     }
 
-    @PostMapping
-    public ResponseEntity<Kategori> create(@RequestBody Kategori kategori) {
-        return ResponseEntity.ok(service.create(kategori));
+    @GetMapping
+    public List<KategoriDTO> getAll() {
+        return kategoriService.getAllKategori();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Kategori> update(@PathVariable Long id, @RequestBody Kategori kategori) {
-        return ResponseEntity.ok(service.update(id, kategori));
+    public KategoriDTO update(@PathVariable Long id, @RequestBody KategoriDTO dto) {
+        return kategoriService.updateKategori(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    public void delete(@PathVariable Long id) {
+        kategoriService.deleteKategori(id);
     }
 }
+

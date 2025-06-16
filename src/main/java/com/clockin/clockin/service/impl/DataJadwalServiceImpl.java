@@ -1,55 +1,85 @@
 package com.clockin.clockin.service.impl;
 
-import com.clockin.clockin.model.DataJadwal;
-import com.clockin.clockin.repository.DataJadwalRepository;
+import com.clockin.clockin.dto.DataJadwalDTO;
+import com.clockin.clockin.model.*;
+import com.clockin.clockin.repository.*;
 import com.clockin.clockin.service.DataJadwalService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class DataJadwalServiceImpl implements DataJadwalService {
 
-    private final DataJadwalRepository repository;
+    @Autowired private DataJadwalRepository dataJadwalRepository;
+    @Autowired private EventRepository eventRepository;
+    @Autowired private TaskRepository taskRepository;
+    @Autowired private KategoriRepository kategoriRepository;
+    @Autowired private PrioritasRepository prioritasRepository;
 
-    public DataJadwalServiceImpl(DataJadwalRepository repository) {
-        this.repository = repository;
+    @Override
+    public DataJadwalDTO create(DataJadwalDTO dto) {
+        DataJadwal jadwal = mapToEntity(dto);
+        return mapToDTO(dataJadwalRepository.save(jadwal));
     }
 
     @Override
-    public List<DataJadwal> getAll() {
-        return repository.findAll();
+    public DataJadwalDTO getById(Long id) {
+        DataJadwal jadwal = dataJadwalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("DataJadwal not found"));
+        return mapToDTO(jadwal);
+}
+
+    @Override
+    public List<DataJadwalDTO> getAll() {
+        return dataJadwalRepository.findAll().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Optional<DataJadwal> getById(Long id) {
-        return repository.findById(id);
-    }
+    public DataJadwalDTO update(Long id, DataJadwalDTO dto) {
+        DataJadwal jadwal = dataJadwalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("DataJadwal not found"));
 
-    @Override
-    public DataJadwal create(DataJadwal jadwal) {
-        return repository.save(jadwal);
-    }
+        jadwal.setJudulJadwal(dto.getJudulJadwal());
+        jadwal.setDeskripsiJadwal(dto.getDeskripsiJadwal());
+        jadwal.setEvent(eventRepository.findById(dto.getEventId()).orElseThrow());
+        jadwal.setTask(taskRepository.findById(dto.getTaskId()).orElseThrow());
+        jadwal.setKategori(kategoriRepository.findById(dto.getKategoriId()).orElseThrow());
+        jadwal.setPrioritas(prioritasRepository.findById(dto.getPrioritasId()).orElseThrow());
 
-    @Override
-    public DataJadwal update(Long id, DataJadwal updatedJadwal) {
-        return repository.findById(id)
-                .map(existing -> {
-                    existing.setJudulJadwal(updatedJadwal.getJudulJadwal());
-                    existing.setDeskripsiJadwal(updatedJadwal.getDeskripsiJadwal());
-                    existing.setEvent(updatedJadwal.getEvent());
-                    existing.setTask(updatedJadwal.getTask());
-                    existing.setKategori(updatedJadwal.getKategori());
-                    existing.setPrioritas(updatedJadwal.getPrioritas());
-                    return repository.save(existing);
-                })
-                .orElseThrow(() -> new RuntimeException("Jadwal not found"));
+        return mapToDTO(dataJadwalRepository.save(jadwal));
     }
 
     @Override
     public void delete(Long id) {
-        repository.deleteById(id);
+        dataJadwalRepository.deleteById(id);
+    }
+
+    private DataJadwal mapToEntity(DataJadwalDTO dto) {
+        DataJadwal jadwal = new DataJadwal();
+        jadwal.setId_jadwal(dto.getIdJadwal());
+        jadwal.setJudulJadwal(dto.getJudulJadwal());
+        jadwal.setDeskripsiJadwal(dto.getDeskripsiJadwal());
+        jadwal.setEvent(eventRepository.findById(dto.getEventId()).orElseThrow());
+        jadwal.setTask(taskRepository.findById(dto.getTaskId()).orElseThrow());
+        jadwal.setKategori(kategoriRepository.findById(dto.getKategoriId()).orElseThrow());
+        jadwal.setPrioritas(prioritasRepository.findById(dto.getPrioritasId()).orElseThrow());
+        return jadwal;
+    }
+
+    private DataJadwalDTO mapToDTO(DataJadwal jadwal) {
+        DataJadwalDTO dto = new DataJadwalDTO();
+        dto.setIdJadwal(jadwal.getId_jadwal());
+        dto.setJudulJadwal(jadwal.getJudulJadwal());
+        dto.setDeskripsiJadwal(jadwal.getDeskripsiJadwal());
+        dto.setEventId(jadwal.getEvent().getId_event());
+        dto.setTaskId(jadwal.getTask().getId_task());
+        dto.setKategoriId(jadwal.getKategori().getId_kategori());
+        dto.setPrioritasId(jadwal.getPrioritas().getId_prioritas());
+        return dto;
     }
 }
-

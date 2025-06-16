@@ -9,7 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Kategori {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id_kategori;

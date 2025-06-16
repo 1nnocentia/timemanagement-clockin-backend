@@ -1,48 +1,67 @@
 package com.clockin.clockin.service.impl;
 
+import com.clockin.clockin.dto.PrioritasDTO;
 import com.clockin.clockin.model.Prioritas;
 import com.clockin.clockin.repository.PrioritasRepository;
 import com.clockin.clockin.service.PrioritasService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PrioritasServiceImpl implements PrioritasService {
 
-    private final PrioritasRepository repository;
+    @Autowired
+    private PrioritasRepository prioritasRepository;
 
-    public PrioritasServiceImpl(PrioritasRepository repository) {
-        this.repository = repository;
+    private PrioritasDTO mapToDTO(Prioritas entity) {
+        PrioritasDTO dto = new PrioritasDTO();
+        dto.setId(entity.getId_prioritas());
+        dto.setNamaPrioritas(entity.getNamaPrioritas());
+        return dto;
+    }
+
+    private Prioritas mapToEntity(PrioritasDTO dto) {
+        Prioritas entity = new Prioritas();
+        entity.setId_prioritas(dto.getId());
+        entity.setNamaPrioritas(dto.getNamaPrioritas());
+        return entity;
     }
 
     @Override
-    public List<Prioritas> getAll() {
-        return repository.findAll();
+    public PrioritasDTO createPrioritas(PrioritasDTO dto) {
+        return mapToDTO(prioritasRepository.save(mapToEntity(dto)));
     }
 
     @Override
-    public Optional<Prioritas> getById(Long id) {
-        return repository.findById(id);
+    public PrioritasDTO getPrioritasById(Long id) {
+        return prioritasRepository.findById(id)
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new RuntimeException("Prioritas not found"));
     }
 
     @Override
-    public Prioritas create(Prioritas prioritas) {
-        return repository.save(prioritas);
+    public List<PrioritasDTO> getAllPrioritas() {
+        return prioritasRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Prioritas update(Long id, Prioritas updatedPrioritas) {
-        return repository.findById(id).map(p -> {
-            p.setNamaPrioritas(updatedPrioritas.getNamaPrioritas());
-            return repository.save(p);
-        }).orElseThrow(() -> new RuntimeException("Prioritas not found"));
+    public PrioritasDTO updatePrioritas(Long id, PrioritasDTO dto) {
+        Prioritas entity = prioritasRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Prioritas not found"));
+        entity.setNamaPrioritas(dto.getNamaPrioritas());
+        return mapToDTO(prioritasRepository.save(entity));
     }
 
     @Override
-    public void delete(Long id) {
-        repository.deleteById(id);
+    public void deletePrioritas(Long id) {
+        prioritasRepository.deleteById(id);
     }
 }
+
 

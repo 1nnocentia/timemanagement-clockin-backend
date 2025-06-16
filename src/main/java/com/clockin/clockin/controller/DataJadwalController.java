@@ -1,48 +1,41 @@
 package com.clockin.clockin.controller;
 
-import com.clockin.clockin.model.DataJadwal;
+import com.clockin.clockin.dto.DataJadwalDTO;
 import com.clockin.clockin.service.DataJadwalService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/jadwal")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/data-jadwal")
 public class DataJadwalController {
 
-    private final DataJadwalService service;
+    @Autowired
+    private DataJadwalService dataJadwalService;
 
-    public DataJadwalController(DataJadwalService service) {
-        this.service = service;
-    }
-
-    @GetMapping
-    public List<DataJadwal> getAll() {
-        return service.getAll();
+    @PostMapping
+    public DataJadwalDTO create(@RequestBody DataJadwalDTO dto) {
+        return dataJadwalService.create(dto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DataJadwal> getById(@PathVariable Long id) {
-        return service.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public DataJadwalDTO getById(@PathVariable Long id) {
+        return dataJadwalService.getById(id);
     }
 
-    @PostMapping
-    public ResponseEntity<DataJadwal> create(@RequestBody DataJadwal jadwal) {
-        return ResponseEntity.ok(service.create(jadwal));
+    @GetMapping
+    public List<DataJadwalDTO> getAll() {
+        return dataJadwalService.getAll();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DataJadwal> update(@PathVariable Long id, @RequestBody DataJadwal jadwal) {
-        return ResponseEntity.ok(service.update(id, jadwal));
+    public DataJadwalDTO update(@PathVariable Long id, @RequestBody DataJadwalDTO dto) {
+        return dataJadwalService.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    public void delete(@PathVariable Long id) {
+        dataJadwalService.delete(id);
     }
 }
