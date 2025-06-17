@@ -8,5 +8,6 @@ public class PrioritasDTO {
     private String namaPrioritas;
     private int completedTasks;
     private int totalTasks;
+    private String color;
 }
 
