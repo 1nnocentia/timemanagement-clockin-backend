@@ -6,5 +6,7 @@ import lombok.Data;
 public class PrioritasDTO {
     private Long id;
     private String namaPrioritas;
+    private int completedTask;
+    private int totalTask;
 }
 
