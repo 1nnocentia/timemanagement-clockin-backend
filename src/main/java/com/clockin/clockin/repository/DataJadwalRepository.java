@@ -27,8 +27,7 @@ public interface DataJadwalRepository extends JpaRepository<DataJadwal, Long> {
     @Query("SELECT k.namaKategori, COUNT(dj) FROM DataJadwal dj JOIN dj.kategori k WHERE dj.user = :user GROUP BY k.namaKategori")
     List<Object[]> countByKategoriNameAndUser(User user);
 
-    // BARU: Query untuk mendapatkan semua DataJadwal untuk user tertentu dengan event dan task dimuat eager
-    // Ini membantu saat melakukan agregasi tanggal di service layer
+    // Mendapatkan semua DataJadwal untuk user tertentu dengan event dan task dimuat
     @Query("SELECT dj FROM DataJadwal dj JOIN FETCH dj.event JOIN FETCH dj.task WHERE dj.user = :user")
     List<DataJadwal> findByUserWithEventAndTask(User user);
 }

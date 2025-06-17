@@ -1,6 +1,5 @@
 package com.clockin.clockin.repository;
 
-import com.clockin.clockin.model.Kategori;
 import com.clockin.clockin.model.Prioritas;
 import com.clockin.clockin.model.User;
 
