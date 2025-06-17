@@ -1,8 +1,11 @@
 package com.clockin.clockin.service.impl;
 
+import com.clockin.clockin.model.DataJadwal;
 import com.clockin.clockin.model.Prioritas;
 import com.clockin.clockin.model.User;
 import com.clockin.clockin.dto.PrioritasDTO;
+import com.clockin.clockin.repository.DataJadwalRepository;
+import com.clockin.clockin.model.Task;
 import com.clockin.clockin.repository.PrioritasRepository;
 import com.clockin.clockin.repository.UserRepository;
 import com.clockin.clockin.service.PrioritasService;
@@ -29,6 +32,9 @@ public class PrioritasServiceImpl implements PrioritasService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private DataJadwalRepository dataJadwalRepository;
+
     private User getAuthenticatedUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String usernameFromPrincipal;
@@ -50,7 +56,7 @@ public class PrioritasServiceImpl implements PrioritasService {
 
         if (userOptional.isEmpty()) {
             logger.error("User with username '{}' (from authenticated session) NOT found in database. This user might be missing or there's a case-sensitivity mismatch.", usernameFromPrincipal);
-            throw new RuntimeException("Pengguna terautentikasi tidak ditemukan.");
+            throw new RuntimeException("Authenticated user not found.");
         }
 
         return userOptional.get();
@@ -63,6 +69,24 @@ public class PrioritasServiceImpl implements PrioritasService {
         PrioritasDTO dto = new PrioritasDTO();
         dto.setId(prioritas.getId());
         dto.setNamaPrioritas(prioritas.getNamaPrioritas());
+
+        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByPrioritasAndUser(prioritas, prioritas.getUser());
+
+        int totalTasks = 0;
+        int completedTasks = 0;
+
+        for (DataJadwal dataJadwal : dataJadwalList) {
+            Task task = dataJadwal.getTask();
+            if (task != null) {
+                totalTasks++;
+                if ("SELESAI".equalsIgnoreCase(task.getStatus()) || "COMPLETED".equalsIgnoreCase(task.getStatus())) { // Sesuaikan string status
+                    completedTasks++;
+                }
+            }
+        }
+        dto.setTotalTasks(totalTasks);
+        dto.setCompletedTasks(completedTasks);
+
         return dto;
     }
 

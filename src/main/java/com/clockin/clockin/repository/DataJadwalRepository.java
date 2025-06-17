@@ -1,6 +1,7 @@
 package com.clockin.clockin.repository;
 
 import com.clockin.clockin.model.DataJadwal;
+import com.clockin.clockin.model.Prioritas;
 import com.clockin.clockin.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -13,4 +14,5 @@ public interface DataJadwalRepository extends JpaRepository<DataJadwal, Long> {
     List<DataJadwal> findByUser(User user);
     Optional<DataJadwal> findByIdAndUser(Long id, User user);
     boolean existsByIdAndUser(Long id, User user);
+    List<DataJadwal> findByPrioritasAndUser(Prioritas prioritas, User user);
 }
