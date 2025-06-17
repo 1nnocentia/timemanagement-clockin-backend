@@ -17,6 +17,9 @@ public class Prioritas {
     @Column(name = "nama_prioritas", nullable = false)
     private String namaPrioritas;  // e.g., Emergency, Urgent, Preventive, Non-Critical
 
+    @Column(name = "color", nullable = false)
+    private String color;  // hex code
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
