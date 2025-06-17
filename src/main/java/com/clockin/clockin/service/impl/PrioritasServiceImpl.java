@@ -69,6 +69,7 @@ public class PrioritasServiceImpl implements PrioritasService {
         PrioritasDTO dto = new PrioritasDTO();
         dto.setId(prioritas.getId());
         dto.setNamaPrioritas(prioritas.getNamaPrioritas());
+        dto.setColor(prioritas.getColor());
 
         List<DataJadwal> dataJadwalList = dataJadwalRepository.findByPrioritasAndUser(prioritas, prioritas.getUser());
 
@@ -97,6 +98,7 @@ public class PrioritasServiceImpl implements PrioritasService {
         Prioritas prioritas = new Prioritas();
         prioritas.setId(dto.getId());
         prioritas.setNamaPrioritas(dto.getNamaPrioritas());
+        prioritas.setColor(dto.getColor());
         return prioritas;
     }
 

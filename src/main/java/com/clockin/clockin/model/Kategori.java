@@ -16,6 +16,9 @@ public class Kategori {
     @Column(name = "nama_kategori", nullable = false)
     private String namaKategori;
 
+    @Column(name = "color", nullable = false)
+    private String color;  // hex code
+
     // foreign key to User
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
