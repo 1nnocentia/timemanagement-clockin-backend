@@ -63,6 +63,7 @@ public class KategoriServiceImpl implements KategoriService {
         KategoriDTO dto = new KategoriDTO();
         dto.setId(kategori.getId());
         dto.setNamaKategori(kategori.getNamaKategori());
+        dto.setColor(kategori.getColor());
         return dto;
     }
 
@@ -73,6 +74,7 @@ public class KategoriServiceImpl implements KategoriService {
         Kategori kategori = new Kategori();
         kategori.setId(dto.getId());
         kategori.setNamaKategori(dto.getNamaKategori());
+        kategori.setColor(dto.getColor());
         return kategori;
     }
 
