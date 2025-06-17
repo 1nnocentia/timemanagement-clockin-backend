@@ -123,6 +123,7 @@ public class KategoriServiceImpl implements KategoriService {
         }
 
         existingKategori.setNamaKategori(dto.getNamaKategori());
+        existingKategori.setColor(dto.getColor());
         Kategori updatedKategori = kategoriRepository.save(existingKategori);
         return convertToDTO(updatedKategori);
     }

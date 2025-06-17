@@ -147,6 +147,7 @@ public class PrioritasServiceImpl implements PrioritasService {
         }
 
         existingPrioritas.setNamaPrioritas(dto.getNamaPrioritas());
+        existingPrioritas.setColor(dto.getColor());
         Prioritas updatedPrioritas = prioritasRepository.save(existingPrioritas);
         return convertToDTO(updatedPrioritas);
     }
