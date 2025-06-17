@@ -2,6 +2,7 @@ package com.clockin.clockin.service.impl;
 
 import com.clockin.clockin.model.*;
 import com.clockin.clockin.dto.DataJadwalDTO;
+import com.clockin.clockin.dto.GroupedCountDTO;
 import com.clockin.clockin.repository.*;
 import com.clockin.clockin.service.DataJadwalService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,11 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.format.DateTimeFormatter; 
+import java.time.temporal.WeekFields;
+import java.util.Locale;
+import java.util.Comparator;
+import java.util.Map;
 
 @Service
 public class DataJadwalServiceImpl implements DataJadwalService {
@@ -172,5 +178,123 @@ public class DataJadwalServiceImpl implements DataJadwalService {
             throw new RuntimeException("Data Jadwal tidak ditemukan atau Anda tidak memiliki akses untuk menghapus.");
         }
         dataJadwalRepository.deleteById(id);
+    }
+
+    @Override
+    public List<GroupedCountDTO> getCountsByPrioritas() {
+        User authenticatedUser = getAuthenticatedUser();
+        // query untuk menghitung jumlah DataJadwal berdasarkan Prioritas
+        List<Object[]> results = dataJadwalRepository.countByPrioritasNameAndUser(authenticatedUser);
+        
+        return results.stream()
+            .map(result -> new GroupedCountDTO((String) result[0], (Long) result[1]))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GroupedCountDTO> getCountsByKategori() {
+        User authenticatedUser = getAuthenticatedUser();
+        // query untuk menghitung jumlah DataJadwal berdasarkan Kategori
+        List<Object[]> results = dataJadwalRepository.countByKategoriNameAndUser(authenticatedUser);
+
+        return results.stream()
+            .map(result -> new GroupedCountDTO((String) result[0], (Long) result[1]))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GroupedCountDTO> getEventCountsByPeriod(String periodType) {
+        User authenticatedUser = getAuthenticatedUser();
+        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUserWithEventAndTask(authenticatedUser);
+
+        // agregasi berdasarkan periodType
+        Map<String, Long> countsMap;
+
+        switch (periodType.toUpperCase()) {
+            case "MONTH":
+                countsMap = dataJadwalList.stream()
+                    .filter(dj -> dj.getEvent() != null && dj.getEvent().getTanggal() != null)
+                    .collect(Collectors.groupingBy(
+                        dj -> dj.getEvent().getTanggal().format(DateTimeFormatter.ofPattern("yyyy-MM")), // Format YYYY-MM
+                        Collectors.counting()
+                    ));
+                break;
+            case "WEEK":
+                countsMap = dataJadwalList.stream()
+                    .filter(dj -> dj.getEvent() != null && dj.getEvent().getTanggal() != null)
+                    .collect(Collectors.groupingBy(
+                        dj -> {
+                            // Format YYYY-WW (tahun-minggu)
+                            WeekFields weekFields = WeekFields.of(Locale.getDefault());
+                            return dj.getEvent().getTanggal().getYear() + "-" +
+                                   String.format("%02d", dj.getEvent().getTanggal().get(weekFields.weekOfWeekBasedYear()));
+                        },
+                        Collectors.counting()
+                    ));
+                break;
+            case "YEAR":
+                countsMap = dataJadwalList.stream()
+                    .filter(dj -> dj.getEvent() != null && dj.getEvent().getTanggal() != null)
+                    .collect(Collectors.groupingBy(
+                        dj -> String.valueOf(dj.getEvent().getTanggal().getYear()), // Format YYYY
+                        Collectors.counting()
+                    ));
+                break;
+            default:
+                throw new IllegalArgumentException("Tipe periode tidak valid: " + periodType);
+        }
+
+        // Konversi Map ke List<GroupedCountDTO> dan urutkan
+        return countsMap.entrySet().stream()
+            .map(entry -> new GroupedCountDTO(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(GroupedCountDTO::getName)) 
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GroupedCountDTO> getTaskCountsByPeriod(String periodType) {
+        User authenticatedUser = getAuthenticatedUser();
+        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUserWithEventAndTask(authenticatedUser); 
+
+        Map<String, Long> countsMap;
+
+        switch (periodType.toUpperCase()) {
+            case "MONTH":
+                countsMap = dataJadwalList.stream()
+                    .filter(dj -> dj.getTask() != null && dj.getTask().getTanggal() != null)
+                    .collect(Collectors.groupingBy(
+                        dj -> dj.getTask().getTanggal().format(DateTimeFormatter.ofPattern("yyyy-MM")),
+                        Collectors.counting()
+                    ));
+                break;
+            case "WEEK":
+                countsMap = dataJadwalList.stream()
+                    .filter(dj -> dj.getTask() != null && dj.getTask().getTanggal() != null)
+                    .collect(Collectors.groupingBy(
+                        dj -> {
+                            WeekFields weekFields = WeekFields.of(Locale.getDefault());
+                            return dj.getTask().getTanggal().getYear() + "-" +
+                                   String.format("%02d", dj.getTask().getTanggal().get(weekFields.weekOfWeekBasedYear()));
+                        },
+                        Collectors.counting()
+                    ));
+                break;
+            case "YEAR":
+                countsMap = dataJadwalList.stream()
+                    .filter(dj -> dj.getTask() != null && dj.getTask().getTanggal() != null)
+                    .collect(Collectors.groupingBy(
+                        dj -> String.valueOf(dj.getTask().getTanggal().getYear()),
+                        Collectors.counting()
+                    ));
+                break;
+            default:
+                throw new IllegalArgumentException("Tipe periode tidak valid: " + periodType);
+        }
+
+        // map ke list GroupedCountDTO dan urutkan
+        return countsMap.entrySet().stream()
+            .map(entry -> new GroupedCountDTO(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(GroupedCountDTO::getName))
+            .collect(Collectors.toList());
     }
 }
