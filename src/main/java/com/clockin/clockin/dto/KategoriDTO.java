@@ -6,5 +6,6 @@ import lombok.Data;
 public class KategoriDTO {
     private Long id;
     private String namaKategori;
+    private String color;
 }
 
