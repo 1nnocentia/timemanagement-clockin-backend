@@ -94,13 +94,10 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true); // Mengizinkan kredensial (seperti cookies atau authorization headers)
-        // MODIFIKASI: Ganti dengan asal frontend Anda (misalnya, "http://localhost:3000")
-        // Untuk pengembangan, '*' bisa digunakan, tetapi tidak disarankan untuk produksi
+        config.setAllowCredentials(true); 
         config.setAllowedOriginPatterns(Arrays.asList(
-            "http://127.0.0.1:5500", // Contoh: Live Server di 5500
             "http://localhost:5500",
-            "http://127.0.0.1:5501"  // Contoh lain: Live Server di 5500
+            "http://127.0.0.1:5501"  
         ));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
