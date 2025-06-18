@@ -20,11 +20,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.Properties;
+import java.util.Arrays;
 
 @Configuration
-@EnableWebSecurity // Mengaktifkan konfigurasi keamanan web Spring
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
@@ -84,6 +88,25 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsFilter corsFilter() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true); // Mengizinkan kredensial (seperti cookies atau authorization headers)
+        // MODIFIKASI: Ganti dengan asal frontend Anda (misalnya, "http://localhost:3000")
+        // Untuk pengembangan, '*' bisa digunakan, tetapi tidak disarankan untuk produksi
+        config.setAllowedOriginPatterns(Arrays.asList(
+            "http://127.0.0.1:5500", // Contoh: Live Server di 5500
+            "http://localhost:5500",
+            "http://127.0.0.1:5501"  // Contoh lain: Live Server di 5500
+        ));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
+        config.setMaxAge(3600L); // Berapa lama hasil pre-flight request bisa di-cache
+        source.registerCorsConfiguration("/**", config); // Terapkan konfigurasi CORS ke semua path
+        return new CorsFilter(source);
     }
 
     // Konfigurasi rantai filter keamanan HTTP
