@@ -21,11 +21,11 @@ public class DataJadwal {
     private String deskripsiJadwal;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_event", nullable = false)
+    @JoinColumn(name = "id_event", nullable = true)
     private Event event;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_task", nullable = false)
+    @JoinColumn(name = "id_task", nullable = true)
     private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -12,4 +12,5 @@ public class LoginResponse {
     private boolean success;
     private String token;
     private Long userId;
+
 }

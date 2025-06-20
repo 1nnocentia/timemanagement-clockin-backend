@@ -97,7 +97,8 @@ public class SecurityConfig {
         config.setAllowCredentials(true); 
         config.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:5500",
-            "http://127.0.0.1:5501"  
+            "http://127.0.0.1:5501",
+            "http://127.0.0.1:5502"  
         ));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
