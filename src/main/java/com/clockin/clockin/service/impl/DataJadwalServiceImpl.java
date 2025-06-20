@@ -92,14 +92,26 @@ public class DataJadwalServiceImpl implements DataJadwalService {
     public DataJadwalDTO create(DataJadwalDTO dto) {
         User authenticatedUser = getAuthenticatedUser();
 
-        Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
-        Task task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Task tidak ditemukan atau bukan milik Anda."));
+        Event event = null;
+        Task task = null;
+
+        if (dto.getEventId() != null) {
+            event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
+                .orElseThrow(() -> new RuntimeException("Error: Event dengan ID " + dto.getEventId() + " tidak ditemukan."));
+        }
+        if (dto.getTaskId() != null) {
+            task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
+                .orElseThrow(() -> new RuntimeException("Error: Task dengan ID " + dto.getTaskId() + " tidak ditemukan."));
+        }
+
+        // Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
+        //         .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
+        // Task task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
+        //         .orElseThrow(() -> new RuntimeException("Task tidak ditemukan atau bukan milik Anda."));
         Kategori kategori = kategoriRepository.findByIdAndUser(dto.getKategoriId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Kategori tidak ditemukan atau bukan milik Anda."));
+                .orElseThrow(() -> new RuntimeException("Error: Kategori dengan ID " + dto.getKategoriId() + " tidak ditemukan."));
         Prioritas prioritas = prioritasRepository.findByIdAndUser(dto.getPrioritasId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Prioritas tidak ditemukan atau bukan milik Anda."));
+                .orElseThrow(() -> new RuntimeException("Error: Prioritas dengan ID " + dto.getPrioritasId() + " tidak ditemukan."));
 
         DataJadwal dataJadwal = new DataJadwal();
         dataJadwal.setJudulJadwal(dto.getJudulJadwal());
@@ -138,15 +150,26 @@ public class DataJadwalServiceImpl implements DataJadwalService {
         DataJadwal existingDataJadwal = dataJadwalRepository.findByIdAndUser(id, authenticatedUser)
                 .orElseThrow(() -> new RuntimeException("Data Jadwal tidak ditemukan atau Anda tidak memiliki akses."));
 
-        if (dto.getEventId() != null && !dto.getEventId().equals(existingDataJadwal.getEvent().getId())) {
-            Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
+        // if (dto.getEventId() != null && !dto.getEventId().equals(existingDataJadwal.getEvent().getId())) {
+        //     Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
+        //         .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
+        //     existingDataJadwal.setEvent(event);
+        // }
+        // if (dto.getTaskId() != null && !dto.getTaskId().equals(existingDataJadwal.getTask().getId())) {
+        //     Task task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
+        //         .orElseThrow(() -> new RuntimeException("Task tidak ditemukan atau bukan milik Anda."));
+        //     existingDataJadwal.setTask(task);
+        // }
+        if (dto.getEventId() != null) {
+             Event event = eventRepository.findById(dto.getEventId())
+                .orElseThrow(() -> new RuntimeException("Event tidak ditemukan."));
             existingDataJadwal.setEvent(event);
-        }
-        if (dto.getTaskId() != null && !dto.getTaskId().equals(existingDataJadwal.getTask().getId())) {
-            Task task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Task tidak ditemukan atau bukan milik Anda."));
+            existingDataJadwal.setTask(null);
+        } else if (dto.getTaskId() != null) {
+            Task task = taskRepository.findById(dto.getTaskId())
+                .orElseThrow(() -> new RuntimeException("Task tidak ditemukan."));
             existingDataJadwal.setTask(task);
+            existingDataJadwal.setEvent(null);
         }
         if (dto.getKategoriId() != null && !dto.getKategoriId().equals(existingDataJadwal.getKategori().getId())) {
             Kategori kategori = kategoriRepository.findByIdAndUser(dto.getKategoriId(), authenticatedUser)

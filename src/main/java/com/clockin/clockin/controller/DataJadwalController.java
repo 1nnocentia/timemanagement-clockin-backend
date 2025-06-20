@@ -18,10 +18,12 @@ public class DataJadwalController {
     private DataJadwalService dataJadwalService;
 
     @PostMapping
-    public DataJadwalDTO create(@RequestBody DataJadwalDTO dto) {
-        return dataJadwalService.create(dto);
-    }
+    public ResponseEntity<DataJadwalDTO> create(@RequestBody DataJadwalDTO dto) {
+    DataJadwalDTO createdDto = dataJadwalService.create(dto);
+    return new ResponseEntity<>(createdDto, HttpStatus.CREATED);
+}
 
+    
     @GetMapping("/{id}")
     public DataJadwalDTO getById(@PathVariable Long id) {
         return dataJadwalService.getById(id);
