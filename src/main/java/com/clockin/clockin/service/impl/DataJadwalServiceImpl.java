@@ -2,7 +2,11 @@ package com.clockin.clockin.service.impl;
 
 import com.clockin.clockin.model.*;
 import com.clockin.clockin.dto.DataJadwalDTO;
+import com.clockin.clockin.dto.EventDTO;
 import com.clockin.clockin.dto.GroupedCountDTO;
+import com.clockin.clockin.dto.KategoriDTO;
+import com.clockin.clockin.dto.PrioritasDTO;
+import com.clockin.clockin.dto.TaskDTO;
 import com.clockin.clockin.repository.*;
 import com.clockin.clockin.service.DataJadwalService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger; 
 import org.slf4j.LoggerFactory; 
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +27,7 @@ import java.util.Locale;
 import java.util.Comparator;
 import java.util.Map;
 
+import java.util.Collections;
 @Service
 public class DataJadwalServiceImpl implements DataJadwalService {
 
@@ -45,73 +51,111 @@ public class DataJadwalServiceImpl implements DataJadwalService {
     @Autowired
     private UserRepository userRepository;
 
-    private User getAuthenticatedUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String usernameFromPrincipal;
-
-        if (principal instanceof UserDetails) {
-            usernameFromPrincipal = ((UserDetails) principal).getUsername();
-            logger.info("Authenticated principal is UserDetails. Extracted username: {}", usernameFromPrincipal);
-        } else {
-            usernameFromPrincipal = principal.toString();
-            logger.warn("Authenticated principal is NOT UserDetails (it's {}). Trying toString(): {}", principal.getClass().getName(), usernameFromPrincipal);
-        }
-
-        if (usernameFromPrincipal == null || usernameFromPrincipal.isEmpty()) {
-            logger.error("Could not extract non-empty username from authenticated principal.");
-            throw new RuntimeException("Tidak dapat mengekstrak nama pengguna dari sesi autentikasi.");
-        }
-
-        Optional<User> userOptional = userRepository.findByUsernameIgnoreCase(usernameFromPrincipal);
-
-        if (userOptional.isEmpty()) {
-            logger.error("User with username '{}' (from authenticated session) NOT found in database. This user might be missing or there's a case-sensitivity mismatch.", usernameFromPrincipal);
-            throw new RuntimeException("Pengguna terautentikasi tidak ditemukan.");
-        }
-
-        return userOptional.get();
+    // converter
+    private EventDTO convertEntityToDto(Event event) {
+        if (event == null) return null;
+        EventDTO dto = new EventDTO();
+        dto.setId(event.getId());
+        dto.setTanggal(event.getTanggal());
+        dto.setJamMulai(event.getJamMulai());
+        dto.setJamAkhir(event.getJamAkhir());
+        return dto;
     }
 
-    private DataJadwalDTO convertToDTO(DataJadwal dataJadwal) {
-        if (dataJadwal == null) {
-            return null;
-        }
+    private TaskDTO convertEntityToDto(Task task) {
+        if (task == null) return null;
+        TaskDTO dto = new TaskDTO();
+        dto.setId(task.getId());
+        dto.setTanggal(task.getTanggal());
+        dto.setJamDeadline(task.getJamDeadline());
+        dto.setStatus(task.getStatus());
+        return dto;
+    }
+
+    private KategoriDTO convertEntityToDto(Kategori kategori) {
+        if (kategori == null) return null;
+        KategoriDTO dto = new KategoriDTO();
+        dto.setId(kategori.getId());
+        dto.setNamaKategori(kategori.getNamaKategori());
+        dto.setColor(kategori.getColor());
+        return dto;
+    }
+    
+    private PrioritasDTO convertEntityToDto(Prioritas prioritas, List<DataJadwal> allUserSchedules) {
+        if (prioritas == null) return null;
+        
+        long totalTasks = allUserSchedules.stream()
+            .filter(dj -> dj.getTask() != null && dj.getPrioritas().getId().equals(prioritas.getId()))
+            .count();
+
+        long completedTasks = allUserSchedules.stream()
+            .filter(dj -> dj.getTask() != null && 
+                         "SELESAI".equalsIgnoreCase(dj.getTask().getStatus()) && 
+                         dj.getPrioritas().getId().equals(prioritas.getId()))
+            .count();
+
+        PrioritasDTO dto = new PrioritasDTO();
+        dto.setId(prioritas.getId());
+        dto.setNamaPrioritas(prioritas.getNamaPrioritas());
+        dto.setColor(prioritas.getColor());
+        dto.setTotalTasks((int) totalTasks);
+        dto.setCompletedTasks((int) completedTasks);
+        
+        return dto;
+    }
+
+    private DataJadwalDTO convertEntityToDto(DataJadwal dataJadwal, List<DataJadwal> allUserSchedules) {
+        if (dataJadwal == null) return null;
         DataJadwalDTO dto = new DataJadwalDTO();
         dto.setIdJadwal(dataJadwal.getId());
         dto.setJudulJadwal(dataJadwal.getJudulJadwal());
         dto.setDeskripsiJadwal(dataJadwal.getDeskripsiJadwal());
-        dto.setEventId(dataJadwal.getEvent() != null ? dataJadwal.getEvent().getId() : null);
-        dto.setTaskId(dataJadwal.getTask() != null ? dataJadwal.getTask().getId() : null);
-        dto.setKategoriId(dataJadwal.getKategori() != null ? dataJadwal.getKategori().getId() : null);
-        dto.setPrioritasId(dataJadwal.getPrioritas() != null ? dataJadwal.getPrioritas().getId() : null);
+        
+        dto.setEvent(convertEntityToDto(dataJadwal.getEvent()));
+        dto.setTask(convertEntityToDto(dataJadwal.getTask()));
+        dto.setKategori(convertEntityToDto(dataJadwal.getKategori()));
+        dto.setPrioritas(convertEntityToDto(dataJadwal.getPrioritas(), allUserSchedules));
+        
         return dto;
+    }
+
+    private User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Tidak ada informasi autentikasi yang valid.");
+        }
+        Object principal = authentication.getPrincipal();
+        
+        String username;
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else {
+            username = principal.toString();
+        }
+        
+        // Periksa pengguna anonim untuk mencegah error
+        if ("anonymousUser".equals(username)) {
+            throw new RuntimeException("Akses ditolak untuk pengguna anonim.");
+        }
+
+        try {
+            Long userId = Long.parseLong(username);
+            return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Pengguna terautentikasi dengan ID " + userId + " tidak ditemukan."));
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Format ID pengguna tidak valid dalam token autentikasi.", e);
+        }
     }
 
     @Override
     @Transactional
     public DataJadwalDTO create(DataJadwalDTO dto) {
-        User authenticatedUser = getAuthenticatedUser();
-
-        Event event = null;
-        Task task = null;
-
-        if (dto.getEventId() != null) {
-            event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Error: Event dengan ID " + dto.getEventId() + " tidak ditemukan."));
-        }
-        if (dto.getTaskId() != null) {
-            task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Error: Task dengan ID " + dto.getTaskId() + " tidak ditemukan."));
-        }
-
-        // Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
-        //         .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
-        // Task task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
-        //         .orElseThrow(() -> new RuntimeException("Task tidak ditemukan atau bukan milik Anda."));
-        Kategori kategori = kategoriRepository.findByIdAndUser(dto.getKategoriId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Error: Kategori dengan ID " + dto.getKategoriId() + " tidak ditemukan."));
-        Prioritas prioritas = prioritasRepository.findByIdAndUser(dto.getPrioritasId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Error: Prioritas dengan ID " + dto.getPrioritasId() + " tidak ditemukan."));
+        User user = getAuthenticatedUser();
+        
+        Event event = (dto.getEventId() != null) ? eventRepository.findById(dto.getEventId()).orElseThrow(() -> new RuntimeException("Event tidak ditemukan")) : null;
+        Task task = (dto.getTaskId() != null) ? taskRepository.findById(dto.getTaskId()).orElseThrow(() -> new RuntimeException("Task tidak ditemukan")) : null;
+        Kategori kategori = kategoriRepository.findById(dto.getKategoriId()).orElseThrow(() -> new RuntimeException("Kategori tidak ditemukan"));
+        Prioritas prioritas = prioritasRepository.findById(dto.getPrioritasId()).orElseThrow(() -> new RuntimeException("Prioritas tidak ditemukan"));
 
         DataJadwal dataJadwal = new DataJadwal();
         dataJadwal.setJudulJadwal(dto.getJudulJadwal());
@@ -120,95 +164,75 @@ public class DataJadwalServiceImpl implements DataJadwalService {
         dataJadwal.setTask(task);
         dataJadwal.setKategori(kategori);
         dataJadwal.setPrioritas(prioritas);
-        dataJadwal.setUser(authenticatedUser);
+        dataJadwal.setUser(user);
 
         DataJadwal savedDataJadwal = dataJadwalRepository.save(dataJadwal);
-        return convertToDTO(savedDataJadwal);
+        
+        List<DataJadwal> allSchedules = dataJadwalRepository.findByUserWithAllRelations(user);
+        return convertEntityToDto(savedDataJadwal, allSchedules);
     }
-
+    
     @Override
     public DataJadwalDTO getById(Long id) {
-        User authenticatedUser = getAuthenticatedUser();
-        DataJadwal dataJadwal = dataJadwalRepository.findByIdAndUser(id, authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Data Jadwal tidak ditemukan atau Anda tidak memiliki akses."));
-        return convertToDTO(dataJadwal);
+        User user = getAuthenticatedUser();
+        DataJadwal dataJadwal = dataJadwalRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new RuntimeException("Data Jadwal tidak ditemukan atau bukan milik Anda."));
+        List<DataJadwal> allSchedules = dataJadwalRepository.findByUserWithAllRelations(user);
+        return convertEntityToDto(dataJadwal, allSchedules);
     }
-
+    
     @Override
     public List<DataJadwalDTO> getAll() {
-        User authenticatedUser = getAuthenticatedUser();
-        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUser(authenticatedUser);
+        User user = getAuthenticatedUser();
+        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUserWithAllRelations(user);
+        if (dataJadwalList == null || dataJadwalList.isEmpty()) {
+            return Collections.emptyList();
+        }
         return dataJadwalList.stream()
-                .map(this::convertToDTO)
+                .map(dj -> convertEntityToDto(dj, dataJadwalList))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public DataJadwalDTO update(Long id, DataJadwalDTO dto) {
-        User authenticatedUser = getAuthenticatedUser();
-        DataJadwal existingDataJadwal = dataJadwalRepository.findByIdAndUser(id, authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Data Jadwal tidak ditemukan atau Anda tidak memiliki akses."));
+        User user = getAuthenticatedUser();
+        DataJadwal existingDataJadwal = dataJadwalRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new RuntimeException("Data Jadwal tidak ditemukan atau bukan milik Anda."));
 
-        // if (dto.getEventId() != null && !dto.getEventId().equals(existingDataJadwal.getEvent().getId())) {
-        //     Event event = eventRepository.findByIdAndUser(dto.getEventId(), authenticatedUser)
-        //         .orElseThrow(() -> new RuntimeException("Event tidak ditemukan atau bukan milik Anda."));
-        //     existingDataJadwal.setEvent(event);
-        // }
-        // if (dto.getTaskId() != null && !dto.getTaskId().equals(existingDataJadwal.getTask().getId())) {
-        //     Task task = taskRepository.findByIdAndUser(dto.getTaskId(), authenticatedUser)
-        //         .orElseThrow(() -> new RuntimeException("Task tidak ditemukan atau bukan milik Anda."));
-        //     existingDataJadwal.setTask(task);
-        // }
-        if (dto.getEventId() != null) {
-             Event event = eventRepository.findById(dto.getEventId())
-                .orElseThrow(() -> new RuntimeException("Event tidak ditemukan."));
-            existingDataJadwal.setEvent(event);
-            existingDataJadwal.setTask(null);
-        } else if (dto.getTaskId() != null) {
-            Task task = taskRepository.findById(dto.getTaskId())
-                .orElseThrow(() -> new RuntimeException("Task tidak ditemukan."));
-            existingDataJadwal.setTask(task);
-            existingDataJadwal.setEvent(null);
-        }
-        if (dto.getKategoriId() != null && !dto.getKategoriId().equals(existingDataJadwal.getKategori().getId())) {
-            Kategori kategori = kategoriRepository.findByIdAndUser(dto.getKategoriId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Kategori tidak ditemukan atau bukan milik Anda."));
+        if(dto.getJudulJadwal() != null) existingDataJadwal.setJudulJadwal(dto.getJudulJadwal());
+        if(dto.getDeskripsiJadwal() != null) existingDataJadwal.setDeskripsiJadwal(dto.getDeskripsiJadwal());
+        
+        // Logika untuk update relasi jika diperlukan
+        if(dto.getKategoriId() != null) {
+            Kategori kategori = kategoriRepository.findById(dto.getKategoriId()).orElseThrow(() -> new RuntimeException("Kategori tidak ditemukan"));
             existingDataJadwal.setKategori(kategori);
         }
-        if (dto.getPrioritasId() != null && !dto.getPrioritasId().equals(existingDataJadwal.getPrioritas().getId())) {
-            Prioritas prioritas = prioritasRepository.findByIdAndUser(dto.getPrioritasId(), authenticatedUser)
-                .orElseThrow(() -> new RuntimeException("Prioritas tidak ditemukan atau bukan milik Anda."));
+        if(dto.getPrioritasId() != null) {
+            Prioritas prioritas = prioritasRepository.findById(dto.getPrioritasId()).orElseThrow(() -> new RuntimeException("Prioritas tidak ditemukan"));
             existingDataJadwal.setPrioritas(prioritas);
         }
 
-        if (dto.getJudulJadwal() != null && !dto.getJudulJadwal().isEmpty()) {
-            existingDataJadwal.setJudulJadwal(dto.getJudulJadwal());
-        }
-        if (dto.getDeskripsiJadwal() != null && !dto.getDeskripsiJadwal().isEmpty()) {
-            existingDataJadwal.setDeskripsiJadwal(dto.getDeskripsiJadwal());
-        }
-        
         DataJadwal updatedDataJadwal = dataJadwalRepository.save(existingDataJadwal);
-        return convertToDTO(updatedDataJadwal);
+        List<DataJadwal> allSchedules = dataJadwalRepository.findByUserWithAllRelations(user);
+        return convertEntityToDto(updatedDataJadwal, allSchedules);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        User authenticatedUser = getAuthenticatedUser();
-        if (!dataJadwalRepository.existsByIdAndUser(id, authenticatedUser)) {
+        User user = getAuthenticatedUser();
+        if (!dataJadwalRepository.existsByIdAndUser(id, user)) {
             throw new RuntimeException("Data Jadwal tidak ditemukan atau Anda tidak memiliki akses untuk menghapus.");
         }
         dataJadwalRepository.deleteById(id);
     }
-
+    
+    // Metode untuk reports, ditambahkan kembali dengan logika yang benar
     @Override
     public List<GroupedCountDTO> getCountsByPrioritas() {
-        User authenticatedUser = getAuthenticatedUser();
-        // query untuk menghitung jumlah DataJadwal berdasarkan Prioritas
-        List<Object[]> results = dataJadwalRepository.countByPrioritasNameAndUser(authenticatedUser);
-        
+        User user = getAuthenticatedUser();
+        List<Object[]> results = dataJadwalRepository.countByPrioritasNameAndUser(user);
         return results.stream()
             .map(result -> new GroupedCountDTO((String) result[0], (Long) result[1]))
             .collect(Collectors.toList());
@@ -216,10 +240,8 @@ public class DataJadwalServiceImpl implements DataJadwalService {
 
     @Override
     public List<GroupedCountDTO> getCountsByKategori() {
-        User authenticatedUser = getAuthenticatedUser();
-        // query untuk menghitung jumlah DataJadwal berdasarkan Kategori
-        List<Object[]> results = dataJadwalRepository.countByKategoriNameAndUser(authenticatedUser);
-
+        User user = getAuthenticatedUser();
+        List<Object[]> results = dataJadwalRepository.countByKategoriNameAndUser(user);
         return results.stream()
             .map(result -> new GroupedCountDTO((String) result[0], (Long) result[1]))
             .collect(Collectors.toList());
@@ -227,10 +249,9 @@ public class DataJadwalServiceImpl implements DataJadwalService {
 
     @Override
     public List<GroupedCountDTO> getEventCountsByPeriod(String periodType) {
-        User authenticatedUser = getAuthenticatedUser();
-        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUserWithEventAndTask(authenticatedUser);
+        User user = getAuthenticatedUser();
+        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUserWithAllRelations(user);
 
-        // agregasi berdasarkan periodType
         Map<String, Long> countsMap;
 
         switch (periodType.toUpperCase()) {
@@ -238,7 +259,7 @@ public class DataJadwalServiceImpl implements DataJadwalService {
                 countsMap = dataJadwalList.stream()
                     .filter(dj -> dj.getEvent() != null && dj.getEvent().getTanggal() != null)
                     .collect(Collectors.groupingBy(
-                        dj -> dj.getEvent().getTanggal().format(DateTimeFormatter.ofPattern("yyyy-MM")), // Format YYYY-MM
+                        dj -> dj.getEvent().getTanggal().format(DateTimeFormatter.ofPattern("yyyy-MM")),
                         Collectors.counting()
                     ));
                 break;
@@ -247,9 +268,8 @@ public class DataJadwalServiceImpl implements DataJadwalService {
                     .filter(dj -> dj.getEvent() != null && dj.getEvent().getTanggal() != null)
                     .collect(Collectors.groupingBy(
                         dj -> {
-                            // Format YYYY-WW (tahun-minggu)
                             WeekFields weekFields = WeekFields.of(Locale.getDefault());
-                            return dj.getEvent().getTanggal().getYear() + "-" +
+                            return dj.getEvent().getTanggal().getYear() + "-W" +
                                    String.format("%02d", dj.getEvent().getTanggal().get(weekFields.weekOfWeekBasedYear()));
                         },
                         Collectors.counting()
@@ -259,7 +279,7 @@ public class DataJadwalServiceImpl implements DataJadwalService {
                 countsMap = dataJadwalList.stream()
                     .filter(dj -> dj.getEvent() != null && dj.getEvent().getTanggal() != null)
                     .collect(Collectors.groupingBy(
-                        dj -> String.valueOf(dj.getEvent().getTanggal().getYear()), // Format YYYY
+                        dj -> String.valueOf(dj.getEvent().getTanggal().getYear()),
                         Collectors.counting()
                     ));
                 break;
@@ -267,7 +287,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
                 throw new IllegalArgumentException("Tipe periode tidak valid: " + periodType);
         }
 
-        // Konversi Map ke List<GroupedCountDTO> dan urutkan
         return countsMap.entrySet().stream()
             .map(entry -> new GroupedCountDTO(entry.getKey(), entry.getValue()))
             .sorted(Comparator.comparing(GroupedCountDTO::getName)) 
@@ -276,8 +295,8 @@ public class DataJadwalServiceImpl implements DataJadwalService {
 
     @Override
     public List<GroupedCountDTO> getTaskCountsByPeriod(String periodType) {
-        User authenticatedUser = getAuthenticatedUser();
-        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUserWithEventAndTask(authenticatedUser); 
+        User user = getAuthenticatedUser();
+        List<DataJadwal> dataJadwalList = dataJadwalRepository.findByUserWithAllRelations(user); 
 
         Map<String, Long> countsMap;
 
@@ -296,7 +315,7 @@ public class DataJadwalServiceImpl implements DataJadwalService {
                     .collect(Collectors.groupingBy(
                         dj -> {
                             WeekFields weekFields = WeekFields.of(Locale.getDefault());
-                            return dj.getTask().getTanggal().getYear() + "-" +
+                            return dj.getTask().getTanggal().getYear() + "-W" +
                                    String.format("%02d", dj.getTask().getTanggal().get(weekFields.weekOfWeekBasedYear()));
                         },
                         Collectors.counting()
@@ -314,7 +333,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
                 throw new IllegalArgumentException("Tipe periode tidak valid: " + periodType);
         }
 
-        // map ke list GroupedCountDTO dan urutkan
         return countsMap.entrySet().stream()
             .map(entry -> new GroupedCountDTO(entry.getKey(), entry.getValue()))
             .sorted(Comparator.comparing(GroupedCountDTO::getName))

@@ -5,6 +5,7 @@ import com.clockin.clockin.model.Prioritas;
 import com.clockin.clockin.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -28,6 +29,6 @@ public interface DataJadwalRepository extends JpaRepository<DataJadwal, Long> {
     List<Object[]> countByKategoriNameAndUser(User user);
 
     // Mendapatkan semua DataJadwal untuk user tertentu dengan event dan task dimuat
-    @Query("SELECT dj FROM DataJadwal dj JOIN FETCH dj.event JOIN FETCH dj.task WHERE dj.user = :user")
-    List<DataJadwal> findByUserWithEventAndTask(User user);
+   @Query("SELECT dj FROM DataJadwal dj LEFT JOIN FETCH dj.event LEFT JOIN FETCH dj.task JOIN FETCH dj.kategori JOIN FETCH dj.prioritas WHERE dj.user = :user")
+    List<DataJadwal> findByUserWithAllRelations(@Param("user") User user);
 }
