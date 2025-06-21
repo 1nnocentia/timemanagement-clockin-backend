@@ -14,12 +14,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger; 
-import org.slf4j.LoggerFactory; 
 import org.springframework.security.core.Authentication;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.time.format.DateTimeFormatter; 
 import java.time.temporal.WeekFields;
@@ -30,8 +28,6 @@ import java.util.Map;
 import java.util.Collections;
 @Service
 public class DataJadwalServiceImpl implements DataJadwalService {
-
-    private static final Logger logger = LoggerFactory.getLogger(DataJadwalServiceImpl.class);
 
     @Autowired
     private DataJadwalRepository dataJadwalRepository;
@@ -121,30 +117,26 @@ public class DataJadwalServiceImpl implements DataJadwalService {
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("Tidak ada informasi autentikasi yang valid.");
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new RuntimeException("Akses ditolak. Pengguna tidak terautentikasi atau anonim.");
         }
-        Object principal = authentication.getPrincipal();
-        
+    
         String username;
+        Object principal = authentication.getPrincipal();
+    
         if (principal instanceof UserDetails) {
             username = ((UserDetails) principal).getUsername();
         } else {
+            // Fallback jika principal bukan UserDetails (misalnya hanya String)
             username = principal.toString();
         }
+    
+        // Cari pengguna di database menggunakan username.
+        Optional<User> userOptional = userRepository.findByUsernameIgnoreCase(username);
         
-        // Periksa pengguna anonim untuk mencegah error
-        if ("anonymousUser".equals(username)) {
-            throw new RuntimeException("Akses ditolak untuk pengguna anonim.");
-        }
-
-        try {
-            Long userId = Long.parseLong(username);
-            return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Pengguna terautentikasi dengan ID " + userId + " tidak ditemukan."));
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Format ID pengguna tidak valid dalam token autentikasi.", e);
-        }
+        return userOptional.orElseThrow(() -> 
+            new RuntimeException("Pengguna terautentikasi dengan username '" + username + "' tidak ditemukan di database.")
+        );
     }
 
     @Override
@@ -203,7 +195,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
         if(dto.getJudulJadwal() != null) existingDataJadwal.setJudulJadwal(dto.getJudulJadwal());
         if(dto.getDeskripsiJadwal() != null) existingDataJadwal.setDeskripsiJadwal(dto.getDeskripsiJadwal());
         
-        // Logika untuk update relasi jika diperlukan
         if(dto.getKategoriId() != null) {
             Kategori kategori = kategoriRepository.findById(dto.getKategoriId()).orElseThrow(() -> new RuntimeException("Kategori tidak ditemukan"));
             existingDataJadwal.setKategori(kategori);
@@ -228,7 +219,6 @@ public class DataJadwalServiceImpl implements DataJadwalService {
         dataJadwalRepository.deleteById(id);
     }
     
-    // Metode untuk reports, ditambahkan kembali dengan logika yang benar
     @Override
     public List<GroupedCountDTO> getCountsByPrioritas() {
         User user = getAuthenticatedUser();
