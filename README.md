@@ -1,4 +1,4 @@
-# ALP Final Project - Kelompok 2 (Backend)
+# ClockIn - ALP Final Project - Kelompok 2 (Backend)
 
 [![Java](https://img.shields.io/badge/Java-17+-orange?style=flat&logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.0+-green?style=flat&logo=springboot)](https://spring.io/projects/spring-boot)
@@ -24,6 +24,44 @@ You can find the frontend repository for this project here:
 
 > [!IMPORTANT]
 > As part of an academic project, the development of approaches in this repository may vary as we learn and adapt. While we strive to implement industry-standard practices, we recognize that consistency will continue to evolve as the team gains insight and experience.
+
+## 📌 Purpose
+
+This repository serves as the backend for the ClockIn project — a time management support system developed as part of the Challenge Based Learning (CBL) academic initiative. It provides a structured API and data processing logic that powers features such as:
+
+- 🧠 **Streak tracking** to motivate user consistency  
+- 📅 **Personal scheduling** and task prioritization  
+- 🚦 **Progress categorization** based on urgency and importance  
+- 🔔 **Notifications and reminders** to reduce missed activities  
+- 📊 **Leaderboard system** to encourage healthy competition  
+
+The backend is designed with scalability, modularity, and maintainability in mind using Java Spring Boot, and connects to a MySQL database managed locally via XAMPP.
+
+## 📦 Project Structure
+
+The backend repository contains the following key components:
+
+```
+Backend Structure
+├── src
+│ ├── main
+│ │ ├── java/com/clockin/clockin
+│ │ │ ├── config # Security and application configuration classes
+│ │ │ ├── controller # REST API controllers
+│ │ │ ├── dto # Data Transfer Objects
+│ │ │ ├── filter # Custom authentication filters
+│ │ │ ├── model # Entity classes (mapped to database)
+│ │ │ ├── repository # Spring Data JPA repositories
+│ │ │ ├── service # Interfaces for service layer
+│ │ │ └── service/impl # Service implementations (business logic)
+│ │ └── resources
+│ │ ├── application.properties # App config (DB, port, etc.)
+├── pom.xml # Maven configuration file
+```
+
+This structure follows a layered architecture pattern, separating concerns between configuration, authentication, controller, service, and persistence layers.
+
+> This backend works together with the ClockIn frontend to deliver a complete productivity web application.
 
 ### Setup
 ```bash
