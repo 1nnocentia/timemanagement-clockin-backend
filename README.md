@@ -10,6 +10,19 @@ This repository contains the backend part of the Challenge Based Learning (CBL) 
 > [!NOTE]
 > This project is still under active development. Database settings and deployment strategies will likely be adjusted when it enters a production environment.
 
+## 📖 Project Overview
+
+**ClockIn** is a web-based time management application developed using the Java Spring Boot framework as the backend. The project was created as part of the **ALP (Applied Learning Project)** with the Challenge Based Learning (CBL) approach. It is designed to help users organize tasks, track progress, maintain productivity streaks, and categorize their activities based on urgency and importance.
+
+The backend plays a key role in:
+
+- Handling user authentication and security using JWT tokens
+- Managing tasks, events, and schedules with full CRUD capabilities
+- Supporting user progress tracking through streaks and leaderboards
+- Sending reminders and status updates via a notification system
+
+By combining modern backend practices with a layered architecture and clear API design, this project provides a robust foundation for time-based productivity systems.
+
 ## 🔗 Visit Frontend Repository 
 You can find the frontend repository for this project here: 
 [**Frontend-ALP-Kelompok2**](https://github.com/1nnocentia/timeproductivityweb)
