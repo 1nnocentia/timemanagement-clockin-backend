@@ -4,10 +4,10 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.0+-green?style=flat&logo=springboot)](https://spring.io/projects/spring-boot)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com/)
 
-This is a backend repository for a Challenge Based Learning (CBL) project focused on creating an interactive platform to help people overcome their time management issues. The project implements server-side logic and API for a full-stack web application using modern technologies and following professional development practices.
+This repository contains the backend part of the Challenge Based Learning (CBL) project which aims to create an interactive platform to support users in solving time management challenges. The system is built with a full-stack development approach, using the latest technologies and implementing professional software development practices on the server side and its API.
 
 > [!NOTE]
-> This project is currently under development. Database configuration and deployment strategies may change for production environments.
+> This project is still under active development. Database settings and deployment strategies will likely be adjusted when it enters a production environment.
 
 ## 🔗 Visit Frontend Repository 
 You can find the frontend repository for this project here: 
