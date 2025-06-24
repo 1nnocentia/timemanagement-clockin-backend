@@ -25,3 +25,37 @@ You can find the frontend repository for this project here:
 > [!IMPORTANT]
 > As part of an academic project, the development of approaches in this repository may vary as we learn and adapt. While we strive to implement industry-standard practices, we recognize that consistency will continue to evolve as the team gains insight and experience.
 
+### Setup
+```bash
+# Clone repository
+git clone https://github.com/1nnocentia/timemanagement-clockin-backend.git
+
+# Configure database
+# Start XAMPP MySQL service
+# Database 'clockin' will be auto-created
+
+# Run application
+mvn spring-boot:run
+```
+
+**API Base URL:** `http://localhost:8080/api`
+
+## 🔧 Troubleshooting
+
+> [!WARNING]
+> Make sure to back up important data first before making changes to the database. Deleting a database will permanently delete all existing data.
+
+### Common Issues
+
+**XAMPP Not Running**
+- **Problem:** Application fails to connect to database
+- **Solution:** Ensure XAMPP is running and MySQL service is active
+- **Check:** Verify MySQL is accessible at `localhost:3306`
+
+**Java Version Mismatch**
+- **Problem:** Build fails or application won't start
+- **Solution:** Ensure your Java version matches the one specified in `pom.xml`
+- **Check:** Verify you're using Java 17+ as specified in the project configuration
+
+> [!TIP]
+> If you experience recurring issues, try clearing the Maven cache by running `mvn clean install`, then restarting your IDE.
