@@ -3,6 +3,7 @@
 [![Java](https://img.shields.io/badge/Java-17+-orange?style=flat&logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.0+-green?style=flat&logo=springboot)](https://spring.io/projects/spring-boot)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![XAMPP](https://img.shields.io/badge/XAMPP-recommended-FB7A24?style=flat&logo=xampp&logoColor=white)](https://www.apachefriends.org/download.html)
 
 This repository contains the backend part of the Challenge Based Learning (CBL) project which aims to create an interactive platform to support users in solving time management challenges. The system is built with a full-stack development approach, using the latest technologies and implementing professional software development practices on the server side and its API.
 
