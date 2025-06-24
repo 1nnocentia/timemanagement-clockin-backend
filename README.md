@@ -19,3 +19,8 @@ You can find the frontend repository for this project here:
 - **Patrick Shiawase Aruji**
 - **Rasya Febrian Dema**
 - **Abel El Zachary**
+
+
+> [!IMPORTANT]
+> As part of an academic project, the development of approaches in this repository may vary as we learn and adapt. While we strive to implement industry-standard practices, we recognize that consistency will continue to evolve as the team gains insight and experience.
+
