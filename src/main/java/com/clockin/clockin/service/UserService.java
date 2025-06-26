@@ -54,7 +54,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setLastUsernameChangeDate(LocalDate.now(ZoneOffset.UTC));
         if (user.getProfilePictureId() == null || user.getProfilePictureId().isEmpty()) {
-            user.setProfilePictureId("aset_aplikasi_personal_1"); // defaultnya 1
+            user.setProfilePictureId("Aset_Aplikasi_Personal_1.png"); // defaultnya 1
         }
         return userRepository.save(user);
     }

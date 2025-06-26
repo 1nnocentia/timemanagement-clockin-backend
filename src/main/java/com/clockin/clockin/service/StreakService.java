@@ -66,9 +66,9 @@ public class StreakService {
             // Skipped intaction (reset streak)
             System.out.println("Streak reset due to skipped interaction.");
             String resetMessage = "Your streak was reset from " + oldStreak + " days. Let's create a new one!";
-            notificationService.createNotification(userId, resetMessage, "STREAK_RESET");
-            mailService.sendEmail(user.getEmail(), "Your streak being reset in Clockin :'(!", resetMessage);
             streak.setCurrentStreak(1);
+            // notificationService.createNotification(userId, resetMessage, "STREAK_RESET");
+            // mailService.sendEmail(user.getEmail(), "Your streak being reset in Clockin :'(!", resetMessage);
         }
 
         // max streak update if max streak is less than current streak
